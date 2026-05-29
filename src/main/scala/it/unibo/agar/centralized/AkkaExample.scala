@@ -1,8 +1,8 @@
-package it.unibo.agar
+package it.unibo.agar.centralized
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import it.unibo.agar.centralized.Message
 
 object PingPong:
 

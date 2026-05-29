@@ -1,7 +1,6 @@
-package it.unibo.agar.view
+package it.unibo.agar.centralized.view
 
-import it.unibo.agar.model.MockGameStateManager
-
+import it.unibo.agar.centralized.model.MockGameStateManager
 import java.awt.Graphics2D
 import scala.swing.*
 

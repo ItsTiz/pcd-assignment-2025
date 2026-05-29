@@ -1,10 +1,9 @@
-package it.unibo.agar
+package it.unibo.agar.distributed
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorSystem, Behavior}
 import com.typesafe.config.ConfigFactory
 
-val seeds = List(2551, 2552) // seed used in the configuration
+val seeds = List(25251, 25252, 25253) // seed used in the configuration
 
 def startup[X](file: String = "base-cluster", port: Int)(root: => Behavior[X]): ActorSystem[X] =
   // Override the configuration of the port
@@ -21,7 +20,7 @@ def startupWithRole[X](role: String, port: Int)(root: => Behavior[X]): ActorSyst
       akka.remote.artery.canonical.port=$port
       akka.cluster.roles = [$role]
       """)
-    .withFallback(ConfigFactory.load("base-cluster"))
+    .withFallback(ConfigFactory.load("agario-cluster"))
 
   // Create an Akka system
-  ActorSystem(root, "ClusterSystem", config)
+  ActorSystem(root, "agario-cluster", config)

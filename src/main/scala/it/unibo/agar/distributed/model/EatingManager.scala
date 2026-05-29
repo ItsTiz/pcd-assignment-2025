@@ -1,4 +1,4 @@
-package it.unibo.agar.model
+package it.unibo.agar.distributed.model
 
 object EatingManager:
 

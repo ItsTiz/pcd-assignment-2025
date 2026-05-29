@@ -1,4 +1,4 @@
-package it.unibo.agar.model
+package it.unibo.agar.centralized.model
 
 import scala.util.Random
 
