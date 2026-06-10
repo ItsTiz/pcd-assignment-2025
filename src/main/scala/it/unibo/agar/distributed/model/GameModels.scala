@@ -1,4 +1,5 @@
 package it.unibo.agar.distributed.model
+import akka.cluster.ddata.{ORSet, ReplicatedData, SelfUniqueAddress}
 
 sealed trait Entity:
 
@@ -20,24 +21,22 @@ case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity
 
 case class Food(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
 
-case class World(
+case class DistributedWorld(
     width: Int,
     height: Int,
     players: Seq[Player],
-    foods: Seq[Food]
-):
+    foods: ORSet[Food]
+) extends ReplicatedData:
 
-  def playersExcludingSelf(player: Player): Seq[Player] =
-    players.filterNot(_.id == player.id)
+  type T = DistributedWorld
 
-  def playerById(id: String): Option[Player] =
-    players.find(_.id == id)
+  def addFood(element: Food)(implicit node: SelfUniqueAddress): DistributedWorld =
+    copy(foods = foods :+ element)
 
-  def updatePlayer(player: Player): World =
-    copy(players = players.map(p => if (p.id == player.id) player else p))
+  def removeFood(element: Food)(implicit node: SelfUniqueAddress): DistributedWorld =
+    copy(foods = foods.remove(element))
 
-  def removePlayers(ids: Seq[Player]): World =
-    copy(players = players.filterNot(p => ids.map(_.id).contains(p.id)))
+  def foodElements: Set[Food] = foods.elements
 
-  def removeFoods(ids: Seq[Food]): World =
-    copy(foods = foods.filterNot(f => ids.contains(f)))
+  override def merge(that: DistributedWorld): DistributedWorld =
+    copy(foods = this.foods.merge(that.foods))

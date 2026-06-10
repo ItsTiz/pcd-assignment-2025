@@ -3,9 +3,11 @@ package it.unibo.agar.distributed.model.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 
-object FoodManagementRoot:
+object PlayerManager:
 
-  def apply(): Behavior[Unit] =
+  sealed trait PlayerManagerMessage
+
+  def apply(): Behavior[PlayerManagerMessage] =
     Behaviors.empty;
 
-end FoodManagementRoot
+end PlayerManager
