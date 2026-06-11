@@ -11,22 +11,17 @@ object FoodManager:
 
   def apply(nGenerators: Int): Behavior[FoodManagerMessage] =
     Behaviors.setup { context =>
-
       val system = context.system
-      val mapSectors = 4
-
       context.log.info(s"Starting $nGenerators generators...")
 
       ShardedDaemonProcess(system).init[FoodGeneratorMessage](
         name = "food-generation",
-        numberOfInstances = mapSectors,
+        numberOfInstances = nGenerators,
         behaviorFactory = id => FoodGenerator(id),
-        stopMessage = FoodGenerator.StopGeneration()
+        stopMessage = FoodGenerator.StopGeneration
       )
       
       Behaviors.empty;
     }
-
-
 
 end FoodManager

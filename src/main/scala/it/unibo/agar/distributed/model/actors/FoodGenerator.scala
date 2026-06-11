@@ -2,21 +2,34 @@ package it.unibo.agar.distributed.model.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.ddata.ORSet
+import akka.cluster.ddata.ORSetKey
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.ddata.typed.scaladsl.DistributedData
-import it.unibo.agar.distributed.model.GameInitializer
+import akka.cluster.ddata.typed.scaladsl.Replicator
+import it.unibo.agar.distributed.model.Food
 import it.unibo.agar.distributed.serviceKey
 
-import java.time.InstantSource.system
+import scala.concurrent.duration.DurationLong
+import scala.util.Random
 
 object FoodGenerator:
 
   sealed trait FoodGeneratorMessage
 
-  final case class StopGeneration() extends FoodGeneratorMessage
-  final case class StartGeneration() extends FoodGeneratorMessage
+  case object StopGeneration extends FoodGeneratorMessage
+  case object StartGeneration extends FoodGeneratorMessage
+  case object PauseGeneration extends FoodGeneratorMessage
+
+  private case object Tick extends FoodGeneratorMessage
+  private case object TimerKey
+
+  sealed private trait InternalMessage extends FoodGeneratorMessage
+  private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[ORSet[Food]]) extends InternalMessage
+
+  private def generatingFunction(offX: Int, offY: Int, deltaX: Int, deltaY: Int): Food =
+    Food(s"f${Random.nextInt(1000)}", Random.nextInt(deltaX) + offX, Random.nextInt(deltaY) + offY)
 
   def apply(id: Int): Behavior[FoodGeneratorMessage] =
     Behaviors.setup { context =>
@@ -24,27 +37,58 @@ object FoodGenerator:
 
       implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
       val sKey = serviceKey[FoodGeneratorMessage]("food-gen", id)
+      val updateInterval = context.system.settings.config.getInt("agar.game.food-spawn-interval")
+      val mapWidth = context.system.settings.config.getInt("agar.game.map-width")
+      val mapHeight = context.system.settings.config.getInt("agar.game.map-height")
+
+      val offsetX = id % 2
+      val offSetY = id / 2
 
       context.system.receptionist ! Receptionist.Register(sKey, context.self)
-      //val foods = GameInitializer.initialFoods(numFoods, width, height)
+      // val foods = GameInitializer.initialFoods(numFoods, width, height)
 
-      def generating(): Behavior[FoodGeneratorMessage] =
-        Behaviors.receiveMessage {
-          case StartGeneration() =>
-            Behaviors.empty
-          case StopGeneration() =>
-            Behaviors.stopped
-        }
+      Behaviors.withTimers { timers =>
+        timers.startTimerAtFixedRate(TimerKey, Tick, (updateInterval * 1000).toLong.millis)
 
-      def idle(): Behavior[FoodGeneratorMessage] =
-        Behaviors.receiveMessage {
-          case StopGeneration() =>
-            Behaviors.empty
-          case StartGeneration() =>
-            Behaviors.empty
-        }
+        def waitTrigger: Behavior[FoodGeneratorMessage] =
+          Behaviors.receiveMessage {
+            case Tick =>
+              DistributedData.withReplicatorMessageAdapter[FoodGeneratorMessage, ORSet[Food]] { replicatorAdapter =>
+                replicatorAdapter.askUpdate(
+                  Replicator.Update(ORSetKey("food-ddata"), ORSet.empty, Replicator.WriteLocal)(
+                    _ :+ generatingFunction(offsetX, offSetY, mapWidth / 2, mapHeight / 2)
+                  ),
+                  InternalUpdateResponse.apply
+                )
+                Behaviors.same
+              }
+            case StartGeneration =>
+              Behaviors.same
+            case PauseGeneration =>
+              idle
+            case StopGeneration =>
+              Behaviors.stopped
+            case internal: InternalMessage =>
+              internal match {
+                case InternalUpdateResponse(_) =>
+                  context.log.info("New food registered successfully in replicated data")
+                  Behaviors.same
+              }
+          }
 
-      generating()
+        def idle: Behavior[FoodGeneratorMessage] =
+          Behaviors.receiveMessage {
+            case Tick => Behaviors.same
+            case PauseGeneration => Behaviors.same
+            case StartGeneration =>
+              waitTrigger
+            case StopGeneration =>
+              Behaviors.stopped
+          }
+
+        waitTrigger
+      }
+
     }
 
 end FoodGenerator

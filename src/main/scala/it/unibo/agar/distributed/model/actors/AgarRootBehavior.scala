@@ -15,7 +15,7 @@ object AgarRootBehavior:
 
     if (cluster.selfMember.hasRole("food-mgr"))
       val numberOfGenerators = ctx.system.settings.config.getInt("agar.core.generators")
-      val foodManager = ctx.spawn(FoodManager(numberOfGenerators), s"food-gen-0")
+      val foodManager = ctx.spawn(FoodManager(numberOfGenerators), s"FoodManager")
       ctx.system.receptionist ! Receptionist.Register(serviceKey[FoodManagerMessage]("food-manager"), foodManager)
 
     if (cluster.selfMember.hasRole("player-mgr"))
