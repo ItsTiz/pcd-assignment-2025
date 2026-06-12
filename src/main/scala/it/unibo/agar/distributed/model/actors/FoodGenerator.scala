@@ -29,11 +29,11 @@ object FoodGenerator:
   private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[ORSet[Food]]) extends InternalMessage
 
   private def generatingFunction(offX: Int, offY: Int, deltaX: Int, deltaY: Int): Food =
-    Food(s"f${Random.nextInt(1000)}", Random.nextInt(deltaX) + offX, Random.nextInt(deltaY) + offY)
+    Food(s"f${Random.nextInt(1000)}", Random.nextInt(deltaX) + offX * deltaX, Random.nextInt(deltaY) + offY * deltaY)
 
   def apply(id: Int): Behavior[FoodGeneratorMessage] =
     Behaviors.setup { context =>
-      println(s"Created sharded actor with id: $id")
+      context.log.info(s"Created sharded actor with id: $id")
 
       implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
       val sKey = serviceKey[FoodGeneratorMessage]("food-gen", id)
@@ -78,12 +78,11 @@ object FoodGenerator:
 
         def idle: Behavior[FoodGeneratorMessage] =
           Behaviors.receiveMessage {
-            case Tick => Behaviors.same
-            case PauseGeneration => Behaviors.same
             case StartGeneration =>
               waitTrigger
             case StopGeneration =>
               Behaviors.stopped
+            case _ => Behaviors.same
           }
 
         waitTrigger

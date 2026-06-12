@@ -26,18 +26,22 @@ case class DistributedWorld(
     width: Int,
     height: Int,
     players: Seq[Player],
-    foods: ORSet[Food]
-) extends ReplicatedData:
+    foods: Seq[Food]
+):
 
   type T = DistributedWorld
 
-  def addFood(element: Food)(implicit node: SelfUniqueAddress): DistributedWorld =
+  def addFood(element: Food): DistributedWorld =
     copy(foods = foods :+ element)
 
-  def removeFood(element: Food)(implicit node: SelfUniqueAddress): DistributedWorld =
-    copy(foods = foods.remove(element))
+  def newFoods(elements: Seq[Food]): DistributedWorld =
+    copy(foods = elements)
 
-  def foodElements: Set[Food] = foods.elements
+//  def removeFood(element: Food): DistributedWorld =
+//    copy(foods = foods.(element))
 
-  override def merge(that: DistributedWorld): DistributedWorld =
-    copy(foods = this.foods.merge(that.foods))
+  def removeFoods(ids: Seq[Food]): DistributedWorld =
+    copy(foods = foods.filterNot(f => ids.contains(f)))
+
+//  override def merge(that: DistributedWorld): DistributedWorld =
+//    copy(foods = this.foods.merge(that.foods))

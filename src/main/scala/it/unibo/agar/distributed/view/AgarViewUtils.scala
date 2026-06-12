@@ -33,7 +33,7 @@ object AgarViewUtils:
 
     // Draw foods
     g.setColor(Color.green)
-    world.foods.elements.foreach: food =>
+    world.foods.foreach: food =>
       val radius = food.radius.toInt
       val diameter = radius * 2
       val (foodX, foodY) = toScreenCenter(food.x, food.y, radius)

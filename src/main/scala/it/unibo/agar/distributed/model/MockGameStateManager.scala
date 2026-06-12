@@ -11,7 +11,7 @@ class DistributedStateManager(
 ) extends GameStateManager:
 
   def getWorld: DistributedWorld = world
-
+  def setWorld(newWorld: DistributedWorld): Unit = world = newWorld
   def movePlayerDirection(id: String, dx: Double, dy: Double): Unit = ???
 
 end DistributedStateManager
