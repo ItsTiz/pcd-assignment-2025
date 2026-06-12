@@ -1,5 +1,6 @@
 package it.unibo.agar.distributed.model
 import akka.cluster.ddata.{ORSet, ReplicatedData, SelfUniqueAddress}
+import it.unibo.agar.distributed.model.serializables.CborSerializable
 
 sealed trait Entity:
 
@@ -19,7 +20,7 @@ case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity
   def grow(entity: Entity): Player =
     copy(mass = mass + entity.mass)
 
-case class Food(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity
+case class Food(id: String, x: Double, y: Double, mass: Double = 100.0) extends Entity with CborSerializable
 
 case class DistributedWorld(
     width: Int,
