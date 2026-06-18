@@ -1,9 +1,7 @@
-package it.unibo.agar.view
+package it.unibo.agar.centralized.view
 
-import it.unibo.agar.model.MockGameStateManager
-
-import java.awt.Color
-import java.awt.Graphics2D
+import it.unibo.agar.centralized.model.MockGameStateManager
+import java.awt.{Color, Graphics2D}
 import scala.swing.*
 
 class GlobalView(manager: MockGameStateManager) extends MainFrame:
