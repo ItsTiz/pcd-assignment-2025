@@ -1,5 +1,4 @@
 package it.unibo.agar.distributed.model
-import akka.cluster.ddata.{ORSet, ReplicatedData, SelfUniqueAddress}
 import it.unibo.agar.distributed.model.serializables.CborSerializable
 
 sealed trait Entity:
@@ -15,7 +14,7 @@ sealed trait Entity:
     val dy = y - other.y
     math.hypot(dx, dy)
 
-case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity:
+case class Player(id: String, x: Double, y: Double, mass: Double) extends Entity with CborSerializable:
 
   def grow(entity: Entity): Player =
     copy(mass = mass + entity.mass)
@@ -45,3 +44,27 @@ case class DistributedWorld(
 
 //  override def merge(that: DistributedWorld): DistributedWorld =
 //    copy(foods = this.foods.merge(that.foods))
+
+  def updatePlayer(player: Player): DistributedWorld =
+    copy(
+      players =
+        players.map(p =>
+          if p.id == player.id then player
+          else p
+        )
+    )
+
+  def addPlayer(player: Player): DistributedWorld =
+    copy(players = players :+ player)
+
+  def removePlayers(playersToRemove: Seq[Player]): DistributedWorld =
+    val toRemove = playersToRemove.toSet
+    copy(
+      players = players.filterNot(p => toRemove.contains(p))
+    )
+
+  def playerById(id: String): Option[Player] =
+    players.find(_.id == id)
+
+  def playersExcludingSelf(player: Player): Seq[Player] =
+    players.filterNot(_.id == player.id)

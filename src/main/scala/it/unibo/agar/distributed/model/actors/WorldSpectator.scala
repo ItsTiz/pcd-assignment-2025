@@ -2,52 +2,61 @@ package it.unibo.agar.distributed.model.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ddata.ORSet
-import akka.cluster.ddata.ORSetKey
-import akka.cluster.ddata.SelfUniqueAddress
+import akka.cluster.ddata.*
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
-import it.unibo.agar.distributed.model.Food
-import it.unibo.agar.distributed.model.GameStateManager
+
+import it.unibo.agar.distributed.model.{Food, Player}
+
 object WorldSpectator:
 
   sealed trait SpectatorMessage
-  sealed private trait InternalMessage extends SpectatorMessage
+  private sealed trait InternalMessage extends SpectatorMessage
 
   case object Unsubscribe extends SpectatorMessage
-  private case class InternalSubscribeResponse(chg: Replicator.SubscribeResponse[ORSet[Food]]) extends InternalMessage
-  private val key: ORSetKey[Food] = ORSetKey("food-ddata")
 
-  def apply(stateChangedSlot: Seq[Food] => Unit): Behavior[SpectatorMessage] = Behaviors.setup { context =>
-    context.log.info(s"Created spectator actor")
+  private case class InternalFood(
+                                   rsp: Replicator.SubscribeResponse[ORSet[Food]]
+                                 ) extends InternalMessage
 
-    implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+  private case class InternalPlayer(
+                                     rsp: Replicator.SubscribeResponse[LWWMap[String, Player]]
+                                   ) extends InternalMessage
 
-    DistributedData.withReplicatorMessageAdapter[SpectatorMessage, ORSet[Food]] { replicatorAdapter =>
-      replicatorAdapter.subscribe(key, InternalSubscribeResponse.apply)
+  private val foodKey: ORSetKey[Food] = ORSetKey("food-ddata")
 
-      def updated(cachedValues: Set[Food]): Behavior[SpectatorMessage] =
-        Behaviors.receiveMessage[SpectatorMessage] {
-          case Unsubscribe =>
-            replicatorAdapter.unsubscribe(key)
-            Behaviors.same
+  private val playersKey: LWWMapKey[String, Player] = LWWMapKey("players-ddata")
 
-          case internal: InternalMessage =>
-            internal match
-              case InternalSubscribeResponse(chg @ Replicator.Changed(`key`)) =>
-                val elements = chg.get(key).elements
-                stateChangedSlot(elements.toSeq)
-                updated(elements)
+  def apply(stateChangedSlot: (Seq[Food], Seq[Player]) => Unit): Behavior[SpectatorMessage] =
+    Behaviors.setup { context =>
+      context.log.info("Created WorldSpectator")
+      implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+      DistributedData.withReplicatorMessageAdapter[SpectatorMessage, ORSet[Food]] { foodAdapter =>
+        DistributedData.withReplicatorMessageAdapter[SpectatorMessage, LWWMap[String, Player]] { playerAdapter =>
+          foodAdapter.subscribe(foodKey, InternalFood.apply)
+          playerAdapter.subscribe(playersKey, InternalPlayer.apply)
+          def updated(foods: Set[Food], players: Map[String, Player]): Behavior[SpectatorMessage] =
+            Behaviors.receiveMessage {
+              case InternalFood(chg @ Replicator.Changed(`foodKey`)) =>
+                val newFoods = chg.get(foodKey).elements
+                stateChangedSlot(newFoods.toSeq, players.values.toSeq)
+                updated(newFoods, players)
 
-              case InternalSubscribeResponse(Replicator.Deleted(_)) =>
-                Behaviors.unhandled // no deletes
+              case InternalPlayer(chg @ Replicator.Changed(`playersKey`)) =>
+                val newPlayers = chg.get(playersKey).entries
+                stateChangedSlot(foods.toSeq, newPlayers.values.toSeq)
+                updated(foods, newPlayers)
 
-              case InternalSubscribeResponse(_) => // changed but wrong key
+              case Unsubscribe =>
+                foodAdapter.unsubscribe(foodKey)
+                playerAdapter.unsubscribe(playersKey)
+                Behaviors.same
+
+              case _ =>
                 Behaviors.unhandled
+            }
+
+          updated(Set.empty, Map.empty)
         }
-
-      updated(Set.empty)
+      }
     }
-  }
-
-end WorldSpectator
