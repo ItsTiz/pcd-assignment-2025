@@ -2,6 +2,8 @@ package it.unibo.agar.rmi.model;
 
 public record Food(String id, double x, double y, double mass) implements Entity {
 
+    public static final double DEFAULT_MASS = 100.0;
+
     @Override
     public String getId() {
         return id;

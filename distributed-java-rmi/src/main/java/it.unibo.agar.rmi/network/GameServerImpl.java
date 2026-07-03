@@ -5,21 +5,18 @@ import it.unibo.agar.rmi.model.Player;
 import it.unibo.agar.rmi.model.WorldSnapshot;
 
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class GameServerImpl extends UnicastRemoteObject implements GameServer {
+public class GameServerImpl implements GameServer {
 
     private final Map<String, Player> players;
     private final Map<String, GameClient> clients;
     private final Set<Food> foods;
 
     public GameServerImpl() throws RemoteException {
-        super();
-
         this.players = new ConcurrentHashMap<>();
         this.clients = new ConcurrentHashMap<>();
         this.foods = ConcurrentHashMap.newKeySet();
