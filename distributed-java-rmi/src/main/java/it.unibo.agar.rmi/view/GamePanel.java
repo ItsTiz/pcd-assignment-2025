@@ -1,8 +1,8 @@
 package it.unibo.agar.rmi.view;
 
-import it.unibo.agar.rmi.model.GameStateManager;
 import it.unibo.agar.rmi.model.Player;
-import it.unibo.agar.rmi.model.World;
+import it.unibo.agar.rmi.model.WorldSnapshot;
+import it.unibo.agar.rmi.network.GameClientImpl;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,17 +10,18 @@ import java.util.Optional;
 
 public class GamePanel extends JPanel {
 
-    private final GameStateManager gameStateManager;
     private final String focusedPlayerId; // Null for global view
+    private WorldSnapshot toRender;
+    private final GameClientImpl clientStub;
 
-    public GamePanel(GameStateManager gameStateManager, String focusedPlayerId) {
-        this.gameStateManager = gameStateManager;
+    public GamePanel(GameClientImpl clientStub, String focusedPlayerId) {
         this.focusedPlayerId = focusedPlayerId;
+        this.clientStub = clientStub;
         this.setFocusable(true); // Important for receiving keyboard/mouse events if needed directly
     }
 
-    public GamePanel(GameStateManager gameStateManager) {
-        this(gameStateManager, null); // Constructor for GlobalView
+    public void setToRender(WorldSnapshot toRender) {
+        this.toRender = toRender;
     }
 
     @Override
@@ -28,17 +29,16 @@ public class GamePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
-        World world = gameStateManager.getWorld();
         if (focusedPlayerId != null) {
-            Optional<Player> playerOpt = world.getPlayerById(focusedPlayerId);
+            Optional<Player> playerOpt = clientStub.getPlayer();
             if (playerOpt.isPresent()) {
                 Player player = playerOpt.get();
                 final double offsetX = player.getX() - getWidth() / 2.0;
                 final double offsetY = player.getY() - getHeight() / 2.0;
-                AgarViewUtils.drawWorld(g2d, world, offsetX, offsetY);
+                AgarViewUtils.drawWorld(g2d, toRender, offsetX, offsetY);
             }
         } else {
-            AgarViewUtils.drawWorld(g2d, world, 0, 0);
+            AgarViewUtils.drawWorld(g2d, toRender, 0, 0);
         }
     }
 }

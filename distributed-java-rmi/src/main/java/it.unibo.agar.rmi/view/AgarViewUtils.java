@@ -1,9 +1,6 @@
 package it.unibo.agar.rmi.view;
 
-import it.unibo.agar.rmi.model.Entity;
-import it.unibo.agar.rmi.model.Food;
-import it.unibo.agar.rmi.model.Player;
-import it.unibo.agar.rmi.model.World;
+import it.unibo.agar.rmi.model.*;
 
 import java.awt.*;
 
@@ -42,16 +39,16 @@ public class AgarViewUtils {
        final int y = (int) (entity.getY() - offsetY - radius);
        return new PositioningInfo(x, y, radius);
     }
-    public static void drawWorld(final Graphics2D g, final World world, final double offsetX, final double offsetY) {
+    public static void drawWorld(final Graphics2D g, final WorldSnapshot world, final double offsetX, final double offsetY) {
         // Draw foods
-        g.setColor(Color.GREEN);
-        for (Food food : world.getFoods()) {
+        for (Food food : world.foods()) {
             var positioning = getPositioningInfo(food, offsetX, offsetY);
             g.fillOval(positioning.x, positioning.y, positioning.diameter(), positioning.diameter());
         }
+        g.setColor(Color.GREEN);
 
         // Draw players
-        for (Player player : world.getPlayers()) {
+        for (Player player : world.players()) {
             var positioning = getPositioningInfo(player, offsetX, offsetY);
             g.setColor(getPlayerColor(player.getId()));
             g.fillOval(positioning.x, positioning.y, positioning.diameter(), positioning.diameter());

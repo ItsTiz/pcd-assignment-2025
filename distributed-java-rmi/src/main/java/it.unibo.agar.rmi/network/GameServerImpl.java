@@ -43,11 +43,16 @@ public class GameServerImpl implements GameServer {
             return;
         }
         Player updated = player.move(dx, dy);
+        log(updated.getId() + ": " + updated.getX() + ", " +updated.getY());
         players.put(playerId, updated);
     }
 
     @Override
     public synchronized WorldSnapshot getWorldSnapshot() throws RemoteException {
         return new WorldSnapshot(List.copyOf(players.values()), List.copyOf(foods));
+    }
+
+    private static void log(String msg) {
+        System.out.println("[ " + System.currentTimeMillis() + " ][ Main ] " + msg);
     }
 }
