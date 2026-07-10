@@ -8,23 +8,22 @@ import it.unibo.agar.rmi.view.SnapshotListener;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 public class GameClientImpl implements GameClient {
-    private final Optional<Player> player;
+    private final Player player;
     private static final Random random = new Random();
     private final List<SnapshotListener> listeners = new ArrayList<>();
 
     public GameClientImpl() {
-        this.player = Optional.of(new Player(
+        this.player = new Player(
                 "p-" + random.nextInt(1000),
                 random.nextInt(Globals.WORLD_WIDTH),
                 random.nextInt(Globals.WORLD_HEIGHT),
-                120.0));
+                120.0);
     }
 
-    public Optional<Player> getPlayer() {
+    public Player getPlayer() {
         return player;
     }
 

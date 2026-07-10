@@ -2,6 +2,8 @@ package it.unibo.agar.rmi.model;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class GameInitializer {
@@ -20,13 +22,13 @@ public class GameInitializer {
         return initialPlayers(numPlayers, width, height, 120.0);
     }
 
-    public static List<Food> initialFoods(final int numFoods, final int width, final int height, final double initialMass) {
+    public static Set<Food> initialFoods(final int numFoods, final int width, final int height, final double initialMass) {
         return IntStream.rangeClosed(1, numFoods)
                 .mapToObj(i -> new Food("f" + i, random.nextInt(width), random.nextInt(height), initialMass))
-                .toList();
+                .collect(Collectors.toSet());
     }
 
-    public static List<Food> initialFoods(int numFoods, int width, int height) {
+    public static Set<Food> initialFoods(int numFoods, int width, int height) {
         return initialFoods(numFoods, width, height, Food.DEFAULT_MASS);
     }
 }

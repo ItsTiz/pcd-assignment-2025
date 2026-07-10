@@ -26,8 +26,8 @@ public record Player(String id, double x, double y, double mass) implements Enti
         return Math.sqrt(mass);
     }
 
-    public Player move(final double dx, final double dy) {
-        return new Player(id, x + dx, y + dy, mass);
+    public Player moveTo(final double dx, final double dy) {
+        return new Player(id, dx, dy, mass);
     }
 
     public Player grow(final double gainedMass) {

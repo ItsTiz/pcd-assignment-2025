@@ -11,5 +11,6 @@ public interface GameServer extends Remote {
     void join(Player player, GameClient client) throws RemoteException;
     void leave(String playerId) throws RemoteException;
     void move(String playerId, double dx, double dy) throws RemoteException;
+    Player playerValid(final String playerId) throws RemoteException;
     WorldSnapshot getWorldSnapshot() throws RemoteException;
 }

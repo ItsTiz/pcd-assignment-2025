@@ -13,7 +13,6 @@ public class RunClient {
     public static void main(String[] args) {
 
         String host = (args.length < 1) ? null : args[0];
-        Player p = null;
         try {
             Registry registry = LocateRegistry.getRegistry(host);
             GameServer serverService = (GameServer) registry.lookup("serverService");
@@ -21,31 +20,28 @@ public class RunClient {
             GameClientImpl client = new GameClientImpl();
             GameClient clientStub = (GameClient) UnicastRemoteObject.exportObject(client, 0);
 
-            if(client.getPlayer().isPresent()) {
-                p = client.getPlayer().get();
-            }
-
-            Player finalP = p;
+            final Player player = client.getPlayer();
+            final String playerId = player.getId();
 
             SwingUtilities.invokeLater(() -> {
-                LocalView localViewP1 = new LocalView(client, serverService, finalP.getId());
+                LocalView localViewP1 = new LocalView(serverService, playerId);
                 localViewP1.setVisible(true);
                 client.addListener(localViewP1);
             });
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
-                    if (serverService != null && finalP != null) {
-                        serverService.leave(finalP.getId());
+                    if (serverService != null) {
+                        serverService.leave(playerId);
                     }
                 } catch (Exception e) {
                     log("Server might be dead.");
                 }
             }));
 
-            serverService.join(finalP, clientStub); //some sort of observer i guess
+            serverService.join(player, clientStub); //some sort of observer i guess
 
-            log("Running client with player " + finalP.getId());
+            log("Running client with player " + playerId);
 
         } catch (Exception e) {
             log("Client exception: " + e);

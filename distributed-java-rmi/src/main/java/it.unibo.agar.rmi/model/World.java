@@ -1,20 +1,25 @@
 package it.unibo.agar.rmi.model;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class World {
     private final int width;
     private final int height;
-    private final List<Player> players;
-    private final List<Food> foods;
+    private final Map<String, Player> players;
+    private final Set<Food> foods;
 
-    public World(int width, int height, List<Player> players, List<Food> foods) {
+    public World(int width, int height, Map<String, Player> players, Set<Food> foods) {
         this.width = width;
         this.height = height;
-        this.players = List.copyOf(players); // Ensure immutability
-        this.foods = List.copyOf(foods);     // Ensure immutability
+        this.players = new ConcurrentHashMap<>();
+        this.foods = ConcurrentHashMap.newKeySet();
+        this.foods.addAll(foods);
+        this.players.putAll(players);
     }
 
     public int getWidth() {
@@ -25,38 +30,43 @@ public class World {
         return height;
     }
 
-    public List<Player> getPlayers() {
-        return players;
+    public synchronized void addPlayer(final Player player){
+        this.players.put(player.getId(), player);
     }
 
-    public List<Food> getFoods() {
+    public synchronized void removePlayer(final String id){
+        this.players.remove(id);
+    }
+
+    public synchronized Player playerValid(final String playerId) {
+        return this.players.get(playerId);
+    }
+
+    public List<Player> getPlayers() {
+        return players.values().stream().toList();
+    }
+
+    public Set<Food> getFoods() {
         return foods;
     }
 
     public List<Player> getPlayersExcludingSelf(final Player player) {
-        return players.stream()
+        return players.values().stream()
                 .filter(p -> !p.getId().equals(player.getId()))
                 .collect(Collectors.toList());
     }
 
     public Optional<Player> getPlayerById(final String id) {
-        return players.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst();
+        return players.containsKey(id) ? Optional.of(players.get(id)) : Optional.empty();
     }
 
     public World removePlayers(final List<Player> playersToRemove) {
-        List<String> idsToRemove = playersToRemove.stream().map(Player::getId).toList();
-        List<Player> newPlayers = players.stream()
-                .filter(p -> !idsToRemove.contains(p.getId()))
-                .collect(Collectors.toList());
-        return new World(width, height, newPlayers, foods);
+        playersToRemove.forEach(player -> players.remove(player.getId()));
+        return this;
     }
 
     public World removeFoods(List<Food> foodsToRemove) {
-        List<Food> newFoods = foods.stream()
-                .filter(f -> !foodsToRemove.contains(f)) // Assumes Food has proper equals/hashCode or relies on object identity if not overridden
-                .collect(Collectors.toList());
-        return new World(width, height, players, newFoods);
+        foodsToRemove.forEach(this.foods::remove);
+        return this;
     }
 }

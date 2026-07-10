@@ -2,21 +2,21 @@ package it.unibo.agar.rmi.view;
 
 import it.unibo.agar.rmi.model.Player;
 import it.unibo.agar.rmi.model.WorldSnapshot;
-import it.unibo.agar.rmi.network.GameClientImpl;
+import it.unibo.agar.rmi.network.GameServer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Optional;
+import java.rmi.RemoteException;
 
 public class GamePanel extends JPanel {
 
     private final String focusedPlayerId; // Null for global view
     private WorldSnapshot toRender;
-    private final GameClientImpl clientStub;
+    private final GameServer serverStub;
 
-    public GamePanel(GameClientImpl clientStub, String focusedPlayerId) {
+    public GamePanel(GameServer serverStub, String focusedPlayerId) {
         this.focusedPlayerId = focusedPlayerId;
-        this.clientStub = clientStub;
+        this.serverStub = serverStub;
         this.setFocusable(true); // Important for receiving keyboard/mouse events if needed directly
     }
 
@@ -30,13 +30,17 @@ public class GamePanel extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
 
         if (focusedPlayerId != null) {
-            Optional<Player> playerOpt = clientStub.getPlayer();
-            if (playerOpt.isPresent()) {
-                Player player = playerOpt.get();
-                final double offsetX = player.getX() - getWidth() / 2.0;
-                final double offsetY = player.getY() - getHeight() / 2.0;
-                AgarViewUtils.drawWorld(g2d, toRender, offsetX, offsetY);
+            try {
+                Player player = serverStub.playerValid(focusedPlayerId);
+                if (player != null && toRender != null) {
+                    final double offsetX = player.getX() - getWidth() / 2.0;
+                    final double offsetY = player.getY() - getHeight() / 2.0;
+                    AgarViewUtils.drawWorld(g2d, toRender, offsetX, offsetY);
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
             }
+
         } else {
             AgarViewUtils.drawWorld(g2d, toRender, 0, 0);
         }

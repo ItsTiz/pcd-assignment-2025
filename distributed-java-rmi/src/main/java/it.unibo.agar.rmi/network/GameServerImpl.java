@@ -1,55 +1,72 @@
 package it.unibo.agar.rmi.network;
 
-import it.unibo.agar.rmi.model.Food;
-import it.unibo.agar.rmi.model.Player;
-import it.unibo.agar.rmi.model.WorldSnapshot;
+import it.unibo.agar.rmi.model.*;
 
 import java.rmi.RemoteException;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameServerImpl implements GameServer {
 
-    private final Map<String, Player> players;
+    private final GameStateManager gameStateManager;
     private final Map<String, GameClient> clients;
-    private final Set<Food> foods;
 
-    public GameServerImpl() throws RemoteException {
-        this.players = new ConcurrentHashMap<>();
+    public GameServerImpl(GameStateManager manager) throws RemoteException {
+        this.gameStateManager = manager;
         this.clients = new ConcurrentHashMap<>();
-        this.foods = ConcurrentHashMap.newKeySet();
     }
 
     @Override
     public synchronized void join(final Player player, final GameClient client) throws RemoteException {
-        players.put(player.getId(), player);
+        gameStateManager.addPlayer(player);
         clients.put(player.getId(), client);
         System.out.println(player.getId() + " joined the game.");
     }
 
     @Override
     public synchronized void leave(final String playerId) throws RemoteException {
-        players.remove(playerId);
+        gameStateManager.removePlayer(playerId);
         clients.remove(playerId);
         System.out.println(playerId + " left the game.");
     }
 
     @Override
     public synchronized void move(final String playerId, final double dx, final double dy) throws RemoteException {
-        final Player player = players.get(playerId);
-        if (player == null) {
-            return;
-        }
-        Player updated = player.move(dx, dy);
-        log(updated.getId() + ": " + updated.getX() + ", " +updated.getY());
-        players.put(playerId, updated);
+        gameStateManager.setPlayerDirection(playerId, dx, dy);
     }
 
     @Override
     public synchronized WorldSnapshot getWorldSnapshot() throws RemoteException {
-        return new WorldSnapshot(List.copyOf(players.values()), List.copyOf(foods));
+        return gameStateManager.getWorldCopy();
+    }
+
+    @Override
+    public synchronized Player playerValid(final String playerId) throws RemoteException {
+        return gameStateManager.playerValid(playerId);
+    }
+
+    public void signalClients() {
+        clients.forEach((s, gameClient) -> {
+            try {
+                gameClient.onWorldUpdate(gameStateManager.getWorldCopy());
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void runEngine() {
+        log("Starting game loop.");
+        final Timer timer = new Timer(true); // Use daemon thread for timer
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                gameStateManager.tick();
+                signalClients();
+            }
+        }, 0, Globals.GAME_TICK_MS);
     }
 
     private static void log(String msg) {
