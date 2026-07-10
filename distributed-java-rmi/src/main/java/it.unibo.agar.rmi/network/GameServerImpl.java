@@ -3,12 +3,13 @@ package it.unibo.agar.rmi.network;
 import it.unibo.agar.rmi.model.*;
 
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class GameServerImpl implements GameServer {
+public class GameServerImpl implements GameServer, StateListener {
 
     private final GameStateManager gameStateManager;
     private final Map<String, GameClient> clients;
@@ -51,6 +52,16 @@ public class GameServerImpl implements GameServer {
         clients.forEach((s, gameClient) -> {
             try {
                 gameClient.onWorldUpdate(gameStateManager.getWorldCopy());
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void eliminatePlayers(List<String> playerIds) {
+        playerIds.forEach(id -> {
+            try {
+                clients.get(id).onPlayerKilled(id);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }

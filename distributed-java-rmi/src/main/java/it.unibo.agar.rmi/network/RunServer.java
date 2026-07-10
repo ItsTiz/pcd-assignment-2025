@@ -15,7 +15,7 @@ public class RunServer {
 
         final Set<Food> initialFoods = GameInitializer.initialFoods(Globals.NUM_FOODS, Globals.WORLD_WIDTH, WORLD_HEIGHT);
         final World initialWorld = new World(Globals.WORLD_WIDTH, WORLD_HEIGHT, Map.of(), initialFoods);
-        final GameStateManager gameManager = new RemoteGameStateManager(initialWorld);
+        final RemoteGameStateManager gameManager = new RemoteGameStateManager(initialWorld);
 
         try {
             GameServerImpl serverService = new GameServerImpl(gameManager);
@@ -24,6 +24,8 @@ public class RunServer {
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind("serverService", serverServiceStub);
 
+            gameManager.addListener(serverService);
+            
             log("Game server object registered successfully.");
 
             serverService.runEngine();

@@ -4,5 +4,7 @@ import it.unibo.agar.rmi.model.WorldSnapshot;
 
 public interface SnapshotListener {
 
-    public void renderUI(WorldSnapshot world);
+    void renderUI(WorldSnapshot world);
+    
+    void endGame();
 }

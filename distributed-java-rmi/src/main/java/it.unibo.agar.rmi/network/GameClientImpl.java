@@ -40,6 +40,10 @@ public class GameClientImpl implements GameClient {
 
     @Override
     public void onPlayerKilled(String playerId) throws RemoteException {
-
+        if(playerId.equals(player.getId())){
+            for(SnapshotListener listener : listeners){
+                listener.endGame();
+            }
+        }
     }
 }

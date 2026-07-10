@@ -1,5 +1,6 @@
 package it.unibo.agar.rmi.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,11 +9,16 @@ import java.util.stream.Collectors;
 public class RemoteGameStateManager implements GameStateManager {
     private final Map<String, Position> playerDirections;
     private World world;
+    private final List<StateListener> listeners = new ArrayList<>();
 
     public RemoteGameStateManager(final World initialWorld) {
         this.world = initialWorld;
         this.playerDirections = new ConcurrentHashMap<>();
         this.world.getPlayers().forEach(p -> playerDirections.put(p.getId(), Position.ZERO));
+    }
+
+    public void addListener(StateListener listener) {
+        listeners.add(listener);
     }
 
     @Override
@@ -81,6 +87,8 @@ public class RemoteGameStateManager implements GameStateManager {
                 .flatMap(player -> eatenPlayers(currentWorld, player).stream())
                 .distinct()
                 .toList();
+        
+        listeners.forEach(l -> l.eliminatePlayers(playersToRemove.stream().map(Player::getId).toList()));
 
         return new World(currentWorld.getWidth(), currentWorld.getHeight(), updatedPlayers, currentWorld.getFoods())
                 .removeFoods(foodsToRemove)
