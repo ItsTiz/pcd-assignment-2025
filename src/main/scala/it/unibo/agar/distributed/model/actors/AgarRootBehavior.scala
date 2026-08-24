@@ -13,7 +13,7 @@ object AgarRootBehavior:
       val cluster = Cluster(ctx.system)
       val sharding = ClusterSharding(ctx.system)
 
-      sharding.init(Entity(PlayerActor.TypeKey)(PlayerActor(_)))
+      sharding.init(Entity(PlayerActor.TypeKey)(ctx => PlayerActor(ctx.entityId)))
 
       if cluster.selfMember.hasRole("food-mgr") then
         val numberOfGenerators =

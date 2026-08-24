@@ -14,13 +14,12 @@ object AgarIOApp:
       println(s"Starting node with role=$role port=$port")
 
       startupWithRole(role, port)(AgarRootBehavior())
+    else
+      println("No args provided → starting local cluster demo")
+      seeds.zipWithIndex.foreach { case (port, idx) =>
+        val role =
+          if idx == 0 then "player-mgr"
+          else "food-mgr"
 
-  else
-    println("No args provided → starting local cluster demo")
-    seeds.zipWithIndex.foreach { case (port, idx) =>
-      val role =
-        if idx == 0 then "player-mgr"
-        else "food-mgr"
-
-      startupWithRole(role, port)(AgarRootBehavior())
-    }
+        startupWithRole(role, port)(AgarRootBehavior())
+      }

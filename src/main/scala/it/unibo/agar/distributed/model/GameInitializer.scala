@@ -1,7 +1,6 @@
 package it.unibo.agar.distributed.model
 
 import scala.util.Random
-import akka.cluster.ddata.ORSet
 
 object GameInitializer:
 

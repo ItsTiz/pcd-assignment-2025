@@ -20,7 +20,7 @@ class LocalView(manager: GameStateManager, playerId: String) extends MainFrame:
       val (offsetX, offsetY) = playerOpt
         .map(p => (p.x - size.width / 2.0, p.y - size.height / 2.0))
         .getOrElse((0.0, 0.0))
-      AgarViewUtils.drawWorld(g, world, offsetX, offsetY, playerId)
+      AgarViewUtils.drawWorld(g, world, offsetX, offsetY, Some(playerId))
 
     reactions += { case e: event.MouseMoved =>
       val mousePos = e.point
