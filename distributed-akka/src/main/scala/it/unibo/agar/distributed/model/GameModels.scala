@@ -71,3 +71,6 @@ case class DistributedWorld(
 
   def playersExcludingSelf(player: Player): Seq[Player] =
     players.filterNot(_.id == player.id)
+
+  def newPlayers(elements: Seq[Player]): DistributedWorld =
+    copy(players = elements)

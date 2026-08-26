@@ -1,6 +1,7 @@
 package it.unibo.agar.distributed.model.actors
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ddata.{ORSet, ORSetKey, SelfUniqueAddress}
 import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
@@ -10,10 +11,12 @@ import it.unibo.agar.distributed.model.Food
 import it.unibo.agar.distributed.model.Player
 
 import scala.concurrent.duration.DurationInt
+import it.unibo.agar.distributed.model.serializables.CborSerializable
+import it.unibo.agar.distributed.serviceKey
 
 object PlayerManager:
 
-  sealed trait Command
+  sealed trait Command extends CborSerializable
 
   final case class Join(player: Player) extends Command
   final case class Leave(id: String) extends Command
@@ -22,13 +25,14 @@ object PlayerManager:
   final case class PlayerRemoved(id: String) extends Command
 
   private case object Tick extends Command
-  private case object Ignore extends Command
 
-  private case class FoodsChanged(
-      chg: Replicator.SubscribeResponse[ORSet[Food]]
-  ) extends Command
+  private case class FoodsChanged(chg: Replicator.SubscribeResponse[ORSet[Food]]) extends Command
+  private case class PlayersUpdateAck(rsp: Replicator.UpdateResponse[LWWMap[String, Player]]) extends Command
 
   private val foodKey = ORSetKey[Food]("food-ddata")
+  private val playersKey = LWWMapKey[String, Player]("players-ddata")
+
+  val Key: ServiceKey[Command] = serviceKey[Command]("player-manager")
 
   private def playerRef(sharding: ClusterSharding, id: String) = sharding.entityRefFor(PlayerActor.TypeKey, id)
 
@@ -36,83 +40,96 @@ object PlayerManager:
     Behaviors.setup { context =>
       val sharding = ClusterSharding(context.system)
       implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+
+      context.system.receptionist ! Receptionist.Register(Key, context.self)
+
       DistributedData.withReplicatorMessageAdapter[Command, ORSet[Food]] { foodAdapter =>
-        foodAdapter.subscribe(foodKey, FoodsChanged.apply)
-        Behaviors.withTimers { timers =>
-          timers.startTimerWithFixedDelay(Tick, Tick, 50.millis)
-          def running(
-              players: Map[String, Player],
-              foods: Set[Food]
-          ): Behavior[Command] =
-            Behaviors.receiveMessage {
-              case FoodsChanged(chg @ Replicator.Changed(`foodKey`)) =>
-                running(players, chg.get(foodKey).elements)
+        DistributedData.withReplicatorMessageAdapter[Command, LWWMap[String, Player]] { playersAdapter =>
+          foodAdapter.subscribe(foodKey, FoodsChanged.apply)
 
-              case FoodsChanged(_) =>
-                Behaviors.same
+          def publishPlayer(p: Player): Unit =
+            playersAdapter.askUpdate(
+              Replicator.Update(playersKey, LWWMap.empty[String, Player], Replicator.WriteLocal)(_ :+ (p.id -> p)),
+              PlayersUpdateAck.apply
+            )
 
-              case Join(player) =>
-                playerRef(sharding, player.id) !
-                  PlayerActor.Initialize(player, context.self)
-                running(players + (player.id -> player), foods)
+          def retractPlayer(id: String): Unit =
+            playersAdapter.askUpdate(
+              Replicator.Update(playersKey, LWWMap.empty[String, Player], Replicator.WriteLocal)(_.remove(node, id)),
+              PlayersUpdateAck.apply
+            )
 
-              case Leave(id) =>
-                playerRef(sharding, id) !
-                  PlayerActor.Stop
-                running(players - id, foods)
+          Behaviors.withTimers { timers =>
+            timers.startTimerWithFixedDelay(Tick, Tick, 50.millis)
 
-              case PlayerUpdated(p) =>
-                running(players.updated(p.id, p), foods)
+            def running(players: Map[String, Player], foods: Set[Food]): Behavior[Command] =
+              Behaviors.receiveMessage {
+                case FoodsChanged(chg @ Replicator.Changed(`foodKey`)) =>
+                  running(players, chg.get(foodKey).elements)
 
-              case PlayerRemoved(id) =>
-                running(players - id, foods)
+                case FoodsChanged(_) =>
+                  Behaviors.same
 
-              case Tick =>
-                val ps = players.values.toSeq.sortBy(p => (-p.mass, p.id))
-                val fs = foods.toSeq
-                val foodWinners =
-                  fs.flatMap { food =>
-                    ps.filter(p => EatingManager.canEatFood(p, food))
-                      .sortBy(p => (-p.mass, p.id))
-                      .headOption
-                      .map(food -> _)
-                  }.toMap
+                case Join(player) =>
+                  playerRef(sharding, player.id) ! PlayerActor.Initialize(player, context.self)
+                  publishPlayer(player)
+                  running(players + (player.id -> player), foods)
 
-                val foodByPlayer = foodWinners.groupMap(_._2.id)(_._1)
-                val eatenFoods = foodWinners.keySet
+                case Leave(id) =>
+                  playerRef(sharding, id) ! PlayerActor.Stop
+                  retractPlayer(id)
+                  running(players - id, foods)
 
-                foodByPlayer.foreach { (pid, eaten) =>
-                  val mass = eaten.map(_.mass).sum
-                  playerRef(sharding, pid) !
-                    PlayerActor.ConsumeFood(mass)
-                }
+                case PlayerUpdated(p) =>
+                  publishPlayer(p)
+                  running(players.updated(p.id, p), foods)
 
-                val eatenPlayers =
-                  ps.foldLeft(Set.empty[String]) { (dead, predator) =>
-                    if dead.contains(predator.id) then dead
-                    else
-                      val victims =
-                        ps.filter(o =>
-                          o.id != predator.id &&
-                            !dead.contains(o.id) &&
-                            EatingManager.canEatPlayer(predator, o)
-                        )
+                case PlayerRemoved(id) =>
+                  retractPlayer(id)
+                  running(players - id, foods)
 
-                      if victims.nonEmpty then
-                        playerRef(sharding, predator.id) !
-                          PlayerActor.ConsumePlayer(victims.map(_.mass).sum)
+                case Tick =>
+                  val ps = players.values.toSeq.sortBy(p => (-p.mass, p.id))
+                  val fs = foods.toSeq
+                  val foodWinners =
+                    fs.flatMap { food =>
+                      ps.filter(p => EatingManager.canEatFood(p, food))
+                        .sortBy(p => (-p.mass, p.id))
+                        .headOption
+                        .map(food -> _)
+                    }.toMap
 
-                      victims.foreach(v => playerRef(sharding, v.id) ! PlayerActor.Stop)
+                  val foodByPlayer = foodWinners.groupMap(_._2.id)(_._1)
+                  val eatenFoods = foodWinners.keySet
 
-                      dead ++ victims.map(_.id)
+                  foodByPlayer.foreach { (pid, eaten) =>
+                    val mass = eaten.map(_.mass).sum
+                    playerRef(sharding, pid) ! PlayerActor.ConsumeFood(mass)
                   }
 
-                running(players -- eatenPlayers, foods -- eatenFoods)
-              case Ignore =>
-                Behaviors.same
-            }
+                  val eatenPlayers =
+                    ps.foldLeft(Set.empty[String]) { (dead, predator) =>
+                      if dead.contains(predator.id) then dead
+                      else
+                        val victims = ps.filter(o =>
+                          o.id != predator.id && !dead.contains(o.id) && EatingManager.canEatPlayer(predator, o)
+                        )
+                        if victims.nonEmpty then
+                          playerRef(sharding, predator.id) ! PlayerActor.ConsumePlayer(victims.map(_.mass).sum)
+                        victims.foreach(v => playerRef(sharding, v.id) ! PlayerActor.Stop)
+                        dead ++ victims.map(_.id)
+                    }
 
-          running(Map.empty, Set.empty)
+                  eatenPlayers.foreach(retractPlayer)
+
+                  running(players -- eatenPlayers, foods -- eatenFoods)
+
+                case PlayersUpdateAck(_) =>
+                  Behaviors.same
+              }
+
+            running(Map.empty, Set.empty)
+          }
         }
       }
     }
