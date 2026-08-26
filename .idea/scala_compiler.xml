@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaCompilerConfiguration">
+    <option name="separateProdTestSources" value="true" />
+    <profile name="sbt 1" modules="agar-root,agar-root.distributed-agar,agar-root.distributed-agar.main,agar-root.distributed-agar.test,agar-root.java-rmi-agar,agar-root.java-rmi-agar.main,agar-root.java-rmi-agar.test,agar-root.main,agar-root.test,pcd-assignment-2025_2067,pcd-assignment-2025_2067.main,pcd-assignment-2025_2067.test" />
+  </component>
+</project>

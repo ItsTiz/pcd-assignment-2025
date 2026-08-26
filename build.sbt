@@ -3,11 +3,17 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "3.3.6"
 
-
 lazy val akkaVersion = "2.10.5"
 lazy val root = (project in file("."))
+  .aggregate(distributed, javaRmi)
   .settings(
-    name := "agar-io",
+    name := "agar-root",
+    publish / skip := true // Prevents the root itself from compiling code or being published
+  )
+
+lazy val distributed = (project in file("distributed-akka"))
+  .settings(
+    name := "distributed-agar",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion, // For standard log configuration
       "com.typesafe.akka" %% "akka-remote" % akkaVersion, // For akka remote
@@ -19,5 +25,12 @@ lazy val root = (project in file("."))
       "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
       "com.typesafe.akka" %% "akka-actor-typed" % "2.8.8"
     ),
-      run / fork := true
+    run / fork := true
+  )
+
+lazy val javaRmi = (project in file("distributed-java-rmi"))
+  .settings(
+    name := "java-rmi-agar",
+    autoScalaLibrary := false,
+    crossPaths := false
   )

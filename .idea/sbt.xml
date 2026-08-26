@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaSbtSettings">
+    <option name="linkedExternalProjectsSettings">
+      <SbtProjectSettings>
+        <option name="converterVersion" value="2" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="C:\Users\Tiziano\Desktop\Tiziano\UNI\masters\courses\first-year\PCD\pcd-assignment-2025" />
+            <option value="C:\Users\Tiziano\Desktop\Tiziano\UNI\masters\courses\first-year\PCD\pcd-assignment-2025\distributed-akka" />
+            <option value="C:\Users\Tiziano\Desktop\Tiziano\UNI\masters\courses\first-year\PCD\pcd-assignment-2025\distributed-java-rmi" />
+            <option value="C:\Users\Tiziano\Desktop\Tiziano\UNI\masters\courses\first-year\PCD\pcd-assignment-2025\project" />
+          </set>
+        </option>
+        <option name="sbtVersion" value="1.11.0" />
+      </SbtProjectSettings>
+    </option>
+  </component>
+</project>

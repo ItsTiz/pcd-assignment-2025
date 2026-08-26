@@ -88,9 +88,9 @@ fabric.properties
 # Ignore everything but code style settings and run configurations
 # that are supposed to be shared within teams.
 
-.idea/*
+.idea/modules
 
-!.idea/codeStyles
+!distributed-akka/.idea/codeStyles
 !.idea/runConfigurations
 
 ### SBT ###

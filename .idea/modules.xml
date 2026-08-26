@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.agar-root-build.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.agar-root-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.main.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.test.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-akka/agar-root.distributed-agar.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.main.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.test.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/distributed-java-rmi/agar-root.java-rmi-agar.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.main.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.test.iml" filepath="$PROJECT_DIR$/.idea/modules/pcd-assignment-2025/agar-root.test.iml" />
+    </modules>
+  </component>
+</project>
