@@ -14,15 +14,8 @@ object PlayerRootBehavior:
       ClusterSharding(ctx.system).init(Entity(PlayerActor.TypeKey)(entityCtx => PlayerActor(entityCtx.entityId)))
 
       ctx.spawn(WorldSpectator(stateChangedSlot), "WorldSpectator")
-      val joinListener = ctx.spawn(
-        Behaviors.receive[Receptionist.Listing] { (_, listing) =>
-          listing.serviceInstances(PlayerManager.Key).headOption.foreach(_ ! PlayerManager.Join(player))
-          Behaviors.stopped
-        },
-        "PlayerJoinListener"
-      )
-      ctx.system.receptionist ! Receptionist.Find(PlayerManager.Key, joinListener)
-
+      val joinListenerRef = ctx.spawn(PlayerJoinListener(player), "PlayerJoinListener")
+      ctx.system.receptionist ! Receptionist.Subscribe(PlayerManager.Key, joinListenerRef)
       Behaviors.empty
     }
 

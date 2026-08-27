@@ -63,10 +63,13 @@ object FoodGenerator:
                 Behaviors.same
               }
             case StartGeneration =>
+              context.log.info("Starting food generation...")
               Behaviors.same
             case PauseGeneration =>
+              context.log.info("Pausing food generation...")
               idle
             case StopGeneration =>
+              context.log.info("Stopping food generation...")
               Behaviors.stopped
             case internal: InternalMessage =>
               internal match {

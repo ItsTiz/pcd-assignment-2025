@@ -2,8 +2,9 @@ package it.unibo.agar.distributed.model.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
-import it.unibo.agar.distributed.model.actors.FoodGenerator.FoodGeneratorMessage
+import it.unibo.agar.distributed.model.actors.FoodGenerator.{FoodGeneratorMessage, StopGeneration}
 
 object FoodManager:
 
@@ -14,11 +15,14 @@ object FoodManager:
       val system = context.system
       context.log.info(s"Starting $nGenerators generators...")
 
-      ShardedDaemonProcess(system).init[FoodGeneratorMessage](
+      val settings = ShardedDaemonProcessSettings(system).withRole("food-mgr")
+
+      ShardedDaemonProcess(system).init(
         name = "food-generation",
-        numberOfInstances = nGenerators,
+        numberOfInstances = 4,
         behaviorFactory = id => FoodGenerator(id),
-        stopMessage = FoodGenerator.StopGeneration
+        settings = settings,
+        stopMessage = Some(FoodGenerator.StopGeneration)
       )
       
       Behaviors.empty;
