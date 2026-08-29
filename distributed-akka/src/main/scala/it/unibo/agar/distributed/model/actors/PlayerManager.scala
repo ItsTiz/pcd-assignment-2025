@@ -20,6 +20,7 @@ import it.unibo.agar.distributed.model.Player
 import scala.concurrent.duration.DurationInt
 import it.unibo.agar.distributed.model.serializables.CborSerializable
 import it.unibo.agar.distributed.serviceKey
+import it.unibo.agar.distributed.model.GameManager
 
 object PlayerManager:
 
@@ -126,40 +127,24 @@ object PlayerManager:
               running(players - id, foods)
 
             case Tick =>
-              val ps = players.values.toSeq.sortBy(p => (-p.mass, p.id))
-              val fs = foods.toSeq
-              val foodWinners =
-                fs.flatMap { food =>
-                  ps.filter(p => EatingManager.canEatFood(p, food))
-                    .sortBy(p => (-p.mass, p.id))
-                    .headOption
-                    .map(food -> _)
-                }.toMap
+              val result = GameManager.resolveTick(players, foods)
 
-              val foodByPlayer = foodWinners.groupMap(_._2.id)(_._1)
-              val eatenFoods = foodWinners.keySet
-
-              foodByPlayer.foreach { (pid, eaten) =>
-                val mass = eaten.map(_.mass).sum
-                playerRef(sharding, pid) ! PlayerActor.ConsumeFood(mass)
+              result.foodEatenByPlayer.foreach { (pid, eaten) =>
+                playerRef(sharding, pid) ! PlayerActor.ConsumeFood(eaten.map(_.mass).sum)
               }
 
-              val eatenPlayers =
-                ps.foldLeft(Set.empty[String]) { (dead, predator) =>
-                  if dead.contains(predator.id) then dead
-                  else
-                    val victims = ps.filter(o =>
-                      o.id != predator.id && !dead.contains(o.id) && EatingManager.canEatPlayer(predator, o)
-                    )
-                    if victims.nonEmpty then
-                      playerRef(sharding, predator.id) ! PlayerActor.ConsumePlayer(victims.map(_.mass).sum)
-                    victims.foreach(v => playerRef(sharding, v.id) ! PlayerActor.Stop)
-                    dead ++ victims.map(_.id)
-                }
+              result.massGainedFromPlayers.foreach { (pid, mass) =>
+                playerRef(sharding, pid) ! PlayerActor.ConsumePlayer(mass)
+              }
 
-              eatenPlayers.foreach(retractPlayer)
-              removeFoods(eatenFoods)
-              running(players -- eatenPlayers, foods -- eatenFoods)
+              result.eatenPlayers.foreach { id =>
+                playerRef(sharding, id) ! PlayerActor.Stop
+                retractPlayer(id)
+              }
+
+              removeFoods(result.eatenFoods)
+
+              running(players -- result.eatenPlayers, foods -- result.eatenFoods)
           }
 
         running(Map.empty, Set.empty)
