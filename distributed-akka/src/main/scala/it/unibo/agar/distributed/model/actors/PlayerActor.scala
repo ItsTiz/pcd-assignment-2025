@@ -1,73 +1,127 @@
 package it.unibo.agar.distributed.model.actors
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
+import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
+import akka.cluster.ddata.*
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import it.unibo.agar.distributed.model.Player
+import it.unibo.agar.distributed.model.actors.PlayerManager.Command
 import it.unibo.agar.distributed.model.serializables.CborSerializable
+import it.unibo.agar.distributed.model.{EatingManager, Food, Player}
+
+import scala.concurrent.duration.DurationInt
 
 object PlayerActor:
 
   sealed trait Command extends CborSerializable
 
   final case class Initialize(player: Player, manager: ActorRef[PlayerManager.Command]) extends Command
-  final case class Move(dx: Double, dy: Double) extends Command
-  final case class ConsumeFood(mass: Double) extends Command
-  final case class ConsumePlayer(mass: Double) extends Command
+  final case class ChangeDirection(dx: Double, dy: Double) extends Command
+  private case class InternalSubscribeResponse(rsp: Replicator.SubscribeResponse[ReplicatedData]) extends Command
+  private case class InternalFoodUpdateResponse(rsp: Replicator.UpdateResponse[ORSet[Food]]) extends Command
+  private case object Tick extends Command
   case object Stop extends Command
+
+  private val foodKey = ORSetKey[Food]("food-ddata")
+  private val playersKey = LWWMapKey[String, Player]("players-ddata")
 
   val TypeKey: EntityTypeKey[Command] = EntityTypeKey[Command]("Player")
 
-  private val WorldWidth = 1000.0
-  private val WorldHeight = 1000.0
-  private val Speed = 10.0
+  def apply(id: String): Behavior[Command] = Behaviors.setup { context =>
 
-  def apply(id: String): Behavior[Command] =
-    Behaviors.setup { _ =>
-      def waiting(): Behavior[Command] =
-        Behaviors.receiveMessage {
-          case Initialize(player, manager) =>
-            manager ! PlayerManager.PlayerUpdated(player)
-            running(player, manager)
+    val mapWidth = context.system.settings.config.getInt("agar.game.map-width")
+    val mapHeight = context.system.settings.config.getInt("agar.game.map-height")
+    val speed = context.system.settings.config.getInt("agar.game.player-speed")
+    val replicator = DistributedData(context.system).replicator
+    implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
-          case Stop =>
-            Behaviors.stopped
+    val foodUpdateAdapter =
+      context.messageAdapter[Replicator.UpdateResponse[ORSet[Food]]](InternalFoodUpdateResponse.apply)
 
-          case _ =>
-            Behaviors.same
+    val subAdapter =
+      context.messageAdapter[Replicator.SubscribeResponse[ReplicatedData]](InternalSubscribeResponse.apply)
+
+    // Pass the exact same adapter to both subscriptions
+    replicator ! Replicator.Subscribe(foodKey, subAdapter)
+    replicator ! Replicator.Subscribe(playersKey, subAdapter)
+
+    def removeFoods(food: Set[Food]): Unit =
+      replicator ! Replicator.Update(
+        foodKey,
+        ORSet.empty[Food],
+        Replicator.WriteLocal,
+        foodUpdateAdapter
+      ) { currentOrSet =>
+        food.foldLeft(currentOrSet) { (accSet, foodToRemove) =>
+          accSet.remove(node, foodToRemove)
         }
+      }
 
-      def running(player: Player, manager: ActorRef[PlayerManager.Command]): Behavior[Command] =
-        Behaviors.receiveMessage {
+    def waiting(): Behavior[Command] =
+      Behaviors.receiveMessage {
+        case Initialize(player, manager) =>
+          manager ! PlayerManager.PlayerUpdated(player)
+          run(player, manager)
+        case Stop =>
+          Behaviors.stopped
+        case _ =>
+          Behaviors.same
+      }
 
-          case Move(dx, dy) =>
-            val updated =
-              player.copy(
-                x = (player.x + dx * Speed).max(0.0).min(WorldWidth),
-                y = (player.y + dy * Speed).max(0.0).min(WorldHeight)
-              )
-            manager ! PlayerManager.PlayerUpdated(updated)
-            running(updated, manager)
+    def run(player: Player, manager: ActorRef[PlayerManager.Command]): Behavior[Command] =
+      Behaviors.withTimers { timers =>
+        timers.startTimerWithFixedDelay(Tick, Tick, 30.millis)
 
-          case ConsumeFood(mass) =>
-            val updated = player.copy(mass = player.mass + mass)
-            manager ! PlayerManager.PlayerUpdated(updated)
-            running(updated, manager)
+        def running(player: Player, dx: Double, dy: Double, foods: Set[Food], otherPlayers: Map[String, Player]): Behavior[Command] =
+          Behaviors.receiveMessage {
+            
+            case InternalSubscribeResponse(chg @ Replicator.Changed(`foodKey`)) =>
+              running(player, dx, dy, chg.get(foodKey).elements, otherPlayers)
 
-          case ConsumePlayer(mass) =>
-            val updated = player.copy(mass = player.mass + mass)
-            manager ! PlayerManager.PlayerUpdated(updated)
-            running(updated, manager)
+            case InternalSubscribeResponse(chg @ Replicator.Changed(`playersKey`)) =>
+              val allPlayers = chg.get(playersKey).entries
+              val enemies = allPlayers - id
+              running(player, dx, dy, foods, enemies)
 
-          case Stop =>
-            manager ! PlayerManager.PlayerRemoved(player.id)
-            Behaviors.stopped
+            case InternalSubscribeResponse(_) =>
+              Behaviors.same
 
-          case Initialize(_, _) =>
+            case InternalFoodUpdateResponse(_) =>
             Behaviors.same
-        }
 
-      waiting()
-    }
+            case ChangeDirection(newDx, newDy) =>
+              running(player, newDx, newDy, foods, otherPlayers)
+
+            case Tick =>
+              val movedPlayer =
+                player.copy(
+                  x = (player.x + dx * speed).max(0.0).min(mapWidth),
+                  y = (player.y + dy * speed).max(0.0).min(mapHeight)
+                )
+              
+              val result: EatingManager.TickResult = EatingManager.evaluateCollisions(movedPlayer, foods, otherPlayers)
+
+              // Send exactly ONE Replicator.Update for our new position/mass
+              manager ! PlayerManager.PlayerUpdated(result.finalPlayer)
+              // Send Replicator.Update to remove
+              removeFoods(result.eatenFoods)
+              //Send Actor messages to deadPlayers to kill them
+              result.eatenPlayers.foreach(id => manager ! PlayerManager.Leave(id))
+
+              running(result.finalPlayer, dx, dy, foods -- result.eatenFoods, otherPlayers -- result.eatenPlayers)
+
+            case Stop =>
+              Behaviors.stopped
+
+            case Initialize(_, _) =>
+              Behaviors.same
+          }
+
+        running(player, 0, 0, Set.empty, Map.empty)
+      }
+
+    waiting()
+
+  }
+
 end PlayerActor

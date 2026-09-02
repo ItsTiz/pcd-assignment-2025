@@ -1,7 +1,7 @@
 package it.unibo.agar.distributed.controller
 
 import it.unibo.agar.distributed.model.actors.AgarRootBehavior
-import it.unibo.agar.distributed.{seeds, startupWithRole}
+import it.unibo.agar.distributed.{seeds, startupWithRole, startupBackendNode}
 
 object AgarIOApp:
 
@@ -15,10 +15,4 @@ object AgarIOApp:
       startupWithRole(role, port)(AgarRootBehavior())
     else
       println("No args provided → starting local cluster demo")
-      seeds.zipWithIndex.foreach { case (port, idx) =>
-        val role =
-          if idx == 0 then "player-mgr"
-          else "food-mgr"
-  
-        startupWithRole(role, port)(AgarRootBehavior())
-      }
+      seeds.foreach(port => startupBackendNode(port)(AgarRootBehavior()))

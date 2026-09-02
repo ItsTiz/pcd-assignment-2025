@@ -30,44 +30,11 @@ case class DistributedWorld(
 
   type T = DistributedWorld
 
-  def addFood(element: Food): DistributedWorld =
-    copy(foods = foods :+ element)
-
   def newFoods(elements: Seq[Food]): DistributedWorld =
     copy(foods = elements)
 
-//  def removeFood(element: Food): DistributedWorld =
-//    copy(foods = foods.(element))
-
-  def removeFoods(ids: Seq[Food]): DistributedWorld =
-    copy(foods = foods.filterNot(f => ids.contains(f)))
-
-//  override def merge(that: DistributedWorld): DistributedWorld =
-//    copy(foods = this.foods.merge(that.foods))
-
-  def updatePlayer(player: Player): DistributedWorld =
-    copy(
-      players =
-        players.map(p =>
-          if p.id == player.id then player
-          else p
-        )
-    )
-
-  def addPlayer(player: Player): DistributedWorld =
-    copy(players = players :+ player)
-
   def newPlayers(elements: Seq[Player]): DistributedWorld =
     copy(players = elements)
-
-  def removePlayers(playersToRemove: Seq[Player]): DistributedWorld =
-    val toRemove = playersToRemove.toSet
-    copy(
-      players = players.filterNot(p => toRemove.contains(p))
-    )
-
+    
   def playerById(id: String): Option[Player] =
     players.find(_.id == id)
-
-  def playersExcludingSelf(player: Player): Seq[Player] =
-    players.filterNot(_.id == player.id)

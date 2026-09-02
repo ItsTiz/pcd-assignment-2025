@@ -13,8 +13,7 @@ def startup[X](file: String = "base-cluster", port: Int)(root: => Behavior[X]): 
   val config = ConfigFactory
     .parseString(s"""akka.remote.artery.canonical.port=$port""")
     .withFallback(ConfigFactory.load(file))
-
-  // Create an Akka system
+  
   ActorSystem(root, file, config)
 
 def startupWithRole[X](role: String, port: Int)(root: => Behavior[X]): ActorSystem[X] =
@@ -24,8 +23,17 @@ def startupWithRole[X](role: String, port: Int)(root: => Behavior[X]): ActorSyst
       akka.cluster.roles = [$role]
       """)
     .withFallback(ConfigFactory.load("agario-game"))
+  
+  ActorSystem(root, "agario-cluster", config)
 
-  // Create an Akka system
+def startupBackendNode[X](port: Int)(root: => Behavior[X]): ActorSystem[X] =
+  val config = ConfigFactory
+    .parseString(s"""
+      akka.remote.artery.canonical.port=$port
+      akka.cluster.roles = ["backend", "food-mgr", "player-mgr"]
+      """)
+    .withFallback(ConfigFactory.load("agario-game"))
+  
   ActorSystem(root, "agario-cluster", config)
 
 def serviceKey[T](nameTag: String, id: Int = 0)(implicit classTag: ClassTag[T]) = ServiceKey[T](s"$nameTag-$id")

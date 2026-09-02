@@ -1,11 +1,11 @@
 package it.unibo.agar.distributed.view
 
-import it.unibo.agar.distributed.model.GameStateManager
+import it.unibo.agar.distributed.model.DistributedWorldState
 
 import java.awt.Graphics2D
 import scala.swing.{Dimension, MainFrame, Panel}
 
-class GlobalView(manager: GameStateManager) extends MainFrame:
+class GlobalView(manager: DistributedWorldState) extends MainFrame:
 
   title = "Agar.io - Global View"
   preferredSize = new Dimension(800, 800)

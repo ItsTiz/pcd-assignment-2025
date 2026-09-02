@@ -13,10 +13,10 @@ object PlayerJoinListener:
 
           val results = listing.serviceInstances(PlayerManager.Key)
           if (results.isEmpty) {
-            ctx.log.info("waiting again...")
+            ctx.log.info("Waiting to join...")
             Behaviors.same
           } else {
-            ctx.log.info("got it!")
+            ctx.log.info("Contacting manager to join game...")
             results.headOption.foreach(_ ! PlayerManager.Join(player))
             Behaviors.stopped
           }
