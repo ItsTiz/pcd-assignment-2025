@@ -9,7 +9,7 @@ import it.unibo.agar.distributed.model.{Food, Player}
 
 object PlayerRootBehavior:
 
-  def apply(player: Player, stateChangedSlot: (Seq[Food], Seq[Player]) => Unit): Behavior[Nothing] =
+  def apply(player: Player, stateChangedSlot: (Seq[Food], Seq[Player], String) => Unit): Behavior[Nothing] =
     Behaviors.setup[Nothing] { ctx =>
       ClusterSharding(ctx.system).init(Entity(PlayerActor.TypeKey)(entityCtx => PlayerActor(entityCtx.entityId)))
 

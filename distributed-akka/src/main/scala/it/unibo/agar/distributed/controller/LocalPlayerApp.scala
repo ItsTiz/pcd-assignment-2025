@@ -23,7 +23,7 @@ object LocalPlayerApp extends SimpleSwingApplication:
   private val clientRoles: Seq[String] = config.getStringList("agar.roles.client").asScala.toSeq
   private val mapWidth = config.getInt("agar.game.map-width")
   private val mapHeight = config.getInt("agar.game.map-height")
-  private val initialPlayerMass = config.getInt("agar.game.map-height")
+  private val initialPlayerMass = config.getInt("agar.game.initial-player-mass")
   private val nodePort = 0
   private val playerMaxId = 1000
 
@@ -32,8 +32,10 @@ object LocalPlayerApp extends SimpleSwingApplication:
 
   @volatile private var world: DistributedWorld = DistributedWorld(mapWidth, mapHeight, Seq.empty, Seq.empty)
 
-  private def onStateChanged(foods: Seq[Food], players: Seq[Player]): Unit =
+  private def onStateChanged(foods: Seq[Food], players: Seq[Player], winner: String): Unit =
     world = world.newFoods(foods).newPlayers(players)
+    if(winner.nonEmpty)
+      world = world.withWinner(winner)
     onEDT(Window.getWindows.foreach(_.repaint()))
 
   private val system = startupWithRoles(nodePort, clientRoles: _*)(PlayerRootBehavior(initialPlayer, onStateChanged))

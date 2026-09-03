@@ -26,7 +26,8 @@ case class DistributedWorld(
     width: Int,
     height: Int,
     players: Seq[Player],
-    foods: Seq[Food]
+    foods: Seq[Food],
+    winner: String = ""
 ):
 
   type T = DistributedWorld
@@ -39,3 +40,9 @@ case class DistributedWorld(
 
   def playerById(id: String): Option[Player] =
     players.find(_.id == id)
+
+  def withWinner(winner: String): DistributedWorld =
+    copy(winner = winner)
+    
+  def hasWinner: Boolean =
+    winner.nonEmpty

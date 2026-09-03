@@ -1,6 +1,7 @@
 package it.unibo.agar.distributed.controller
 
 import com.typesafe.config.ConfigFactory
+import it.unibo.agar.distributed.controller.LocalPlayerApp.world
 import it.unibo.agar.distributed.model.actors.SpectatorRootBehavior
 import it.unibo.agar.distributed.model.{DistributedWorld, DistributedWorldState, Food, Player}
 import it.unibo.agar.distributed.startupWithRoles
@@ -19,14 +20,16 @@ object GlobalSpectatorApp extends SimpleSwingApplication:
   private val mapHeight = config.getInt("agar.game.map-height")
   private val nodePort = 0
 
-  private val state = new DistributedWorldState(DistributedWorld(mapWidth, mapHeight, Seq.empty, Seq.empty))
+  @volatile private var world = DistributedWorld(mapWidth, mapHeight, Seq.empty, Seq.empty)
 
-  private def onStateChanged(foods: Seq[Food], players: Seq[Player]): Unit =
-    state.setWorld(state.getWorld.newFoods(foods).newPlayers(players))
+  private def onStateChanged(foods: Seq[Food], players: Seq[Player], winner: String): Unit =
+    world = world.newFoods(foods).newPlayers(players)
+    if (winner.nonEmpty)
+      world = world.withWinner(winner)
     onEDT(Window.getWindows.foreach(_.repaint()))
 
   startupWithRoles(nodePort, spectatorRoles: _*)(SpectatorRootBehavior(onStateChanged))
 
-  override def top: Frame = new GlobalView(state)
+  override def top: Frame = new GlobalView(world)
 
 end GlobalSpectatorApp

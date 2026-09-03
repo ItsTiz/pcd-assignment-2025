@@ -3,6 +3,7 @@ package it.unibo.agar.distributed.view
 import it.unibo.agar.distributed.model.DistributedWorld
 
 import java.awt.{Color, Graphics2D}
+import scala.swing.Font
 
 object AgarViewUtils:
 
@@ -42,6 +43,11 @@ object AgarViewUtils:
 
     def toScreenLabel(x: Double, y: Double): (Int, Int) =
       ((x - offsetX + playerLabelOffsetX).toInt, (y - offsetY + playerLabelOffsetY).toInt)
+
+    def centerText(text: String): (Int, Int) =
+      val bounds = g.getClipBounds
+      val metrics = g.getFontMetrics
+      ((bounds.width - metrics.stringWidth(text)) / 2, (bounds.height / 2) + (metrics.getAscent / 2))
 
     // Draw foods
     g.setColor(Color.green)
@@ -83,3 +89,14 @@ object AgarViewUtils:
         40 + idx * 18
       )
     }
+
+    if world.hasWinner then
+      val originalFont = g.getFont
+      g.setFont(Font("SansSerif", Font.Bold, 32))
+      val text =
+        if world.winner == localPlayerId.getOrElse("") then "You won!"
+        else s"You lost! ${world.winner} won."
+      g.setColor(java.awt.Color.red)
+      val (x, y) = centerText(text)
+      g.drawString(text, x, y)
+      g.setFont(originalFont)

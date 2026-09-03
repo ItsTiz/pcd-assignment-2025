@@ -10,7 +10,7 @@ import it.unibo.agar.distributed.serviceKey
 
 object SpectatorRootBehavior:
 
-  def apply(stateChangedSlot: (Seq[Food], Seq[Player]) => Unit): Behavior[Nothing] =
+  def apply(stateChangedSlot: (Seq[Food], Seq[Player], String) => Unit): Behavior[Nothing] =
     Behaviors.setup[Nothing] { ctx =>
       val cluster = Cluster(ctx.system)
       if cluster.selfMember.hasRole("spectator") then

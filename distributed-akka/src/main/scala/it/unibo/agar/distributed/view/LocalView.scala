@@ -47,6 +47,11 @@ class LocalView(manager: GameStateManager, playerId: String) extends MainFrame:
   // invia il comando Move a intervalli fissi, indipendentemente dalla frequenza del mouse
   private val moveTimer = new Timer(
     MoveIntervalMillis,
-    _ => if desiredDx != 0.0 || desiredDy != 0.0 then manager.movePlayerDirection(playerId, desiredDx, desiredDy)
+    _ => {
+        if desiredDx != 0.0 || desiredDy != 0.0 then {
+          manager.movePlayerDirection(playerId, desiredDx, desiredDy)
+        }
+    }
   )
+  moveTimer.setRepeats(!manager.getWorld.hasWinner)
   moveTimer.start()
