@@ -18,25 +18,24 @@ object AgarViewUtils:
 
   private val playerPalette: Array[Color] =
     Array(
-      Color.blue,
-      Color.orange,
-      Color.cyan,
-      Color.pink,
-      Color.yellow,
-      Color.red,
-      Color.green,
-      Color.lightGray
+      Color.blue, Color.orange, Color.cyan, Color.pink, Color.yellow, Color.red, Color.green, Color.lightGray
     )
 
   private def playerColor(id: String): Color =
-      id match
-        case pid if pid.startsWith("p") =>
-          val idx = pid.drop(1).toIntOption.getOrElse(0)
-          playerPalette(idx % playerPalette.length)
-        case _ =>
-          Color.gray
+    id match
+      case pid if pid.startsWith("p") =>
+        val idx = pid.drop(1).toIntOption.getOrElse(0)
+        playerPalette(idx % playerPalette.length)
+      case _ =>
+        Color.gray
 
-  def drawWorld(g: Graphics2D, world: DistributedWorld, offsetX: Double = 0, offsetY: Double = 0, localPlayerId: Option[String] = None): Unit =
+  def drawWorld(
+      g: Graphics2D,
+      world: DistributedWorld,
+      offsetX: Double = 0,
+      offsetY: Double = 0,
+      localPlayerId: Option[String] = None
+  ): Unit =
 
     def toScreenCenter(x: Double, y: Double, radius: Int): (Int, Int) =
       ((x - offsetX - radius).toInt, (y - offsetY - radius).toInt)
@@ -44,14 +43,13 @@ object AgarViewUtils:
     def toScreenLabel(x: Double, y: Double): (Int, Int) =
       ((x - offsetX + playerLabelOffsetX).toInt, (y - offsetY + playerLabelOffsetY).toInt)
 
-  // Draw foods
+    // Draw foods
     g.setColor(Color.green)
     world.foods.foreach: food =>
       val radius = food.radius.toInt
       val diameter = radius * 2
       val (foodX, foodY) = toScreenCenter(food.x, food.y, radius)
       g.fillOval(foodX, foodY, diameter, diameter)
-
 
     // Draw players
     world.players.foreach { player =>
@@ -78,11 +76,10 @@ object AgarViewUtils:
     val leaderboard = world.players.sortBy(p => -p.mass).take(5)
     g.setColor(Color.black)
     g.drawString("Leaderboard", 10, 20)
-    leaderboard.zipWithIndex.foreach {
-      case (player, idx) =>
-        g.drawString(
-          s"${idx + 1}. ${player.id}: ${player.mass.toInt}",
-          10,
-          40 + idx * 18
-        )
+    leaderboard.zipWithIndex.foreach { case (player, idx) =>
+      g.drawString(
+        s"${idx + 1}. ${player.id}: ${player.mass.toInt}",
+        10,
+        40 + idx * 18
+      )
     }

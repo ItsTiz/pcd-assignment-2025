@@ -1,4 +1,4 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.backend.players
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
@@ -30,7 +30,8 @@ object PlayerManager:
     Behaviors.setup { context =>
       val sharding = ClusterSharding(context.system)
       val replicator = DistributedData(context.system).replicator
-      val updateAdapter = context.messageAdapter[Replicator.UpdateResponse[LWWMap[String, Player]]](InternalUpdateResponse.apply)
+      val updateAdapter =
+        context.messageAdapter[Replicator.UpdateResponse[LWWMap[String, Player]]](InternalUpdateResponse.apply)
       implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
       context.system.receptionist ! Receptionist.Register(Key, context.self)
@@ -41,7 +42,7 @@ object PlayerManager:
           LWWMap.empty[String, Player],
           Replicator.WriteLocal,
           updateAdapter
-        )(_.:+ (p.id, p))
+        )(_.:+(p.id, p))
 
       def retractPlayer(id: String): Unit =
         replicator ! Replicator.Update(

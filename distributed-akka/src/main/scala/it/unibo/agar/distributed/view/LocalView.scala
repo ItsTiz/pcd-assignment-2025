@@ -1,6 +1,7 @@
 package it.unibo.agar.distributed.view
 
 import it.unibo.agar.distributed.model.GameStateManager
+
 import java.awt.Graphics2D
 import javax.swing.Timer
 import scala.swing.*
@@ -11,7 +12,7 @@ class LocalView(manager: GameStateManager, playerId: String) extends MainFrame:
   preferredSize = new Dimension(400, 400)
 
   private val MoveIntervalMillis = 30
-  
+
   @volatile private var desiredDx: Double = 0.0
   @volatile private var desiredDy: Double = 0.0
 
@@ -44,8 +45,8 @@ class LocalView(manager: GameStateManager, playerId: String) extends MainFrame:
     }
 
   // invia il comando Move a intervalli fissi, indipendentemente dalla frequenza del mouse
-  private val moveTimer = new Timer(MoveIntervalMillis, _ => {
-    if desiredDx != 0.0 || desiredDy != 0.0 then
-      manager.movePlayerDirection(playerId, desiredDx, desiredDy)
-  })
+  private val moveTimer = new Timer(
+    MoveIntervalMillis,
+    _ => if desiredDx != 0.0 || desiredDy != 0.0 then manager.movePlayerDirection(playerId, desiredDx, desiredDy)
+  )
   moveTimer.start()

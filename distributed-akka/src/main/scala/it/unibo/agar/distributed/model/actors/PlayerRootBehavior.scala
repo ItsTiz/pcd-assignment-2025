@@ -4,7 +4,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
-
+import it.unibo.agar.distributed.model.actors.backend.players.{PlayerActor, PlayerJoinListener, PlayerManager}
 import it.unibo.agar.distributed.model.{Food, Player}
 
 object PlayerRootBehavior:

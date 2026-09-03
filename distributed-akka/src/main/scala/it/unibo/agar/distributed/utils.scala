@@ -16,21 +16,12 @@ def startup[X](file: String = "base-cluster", port: Int)(root: => Behavior[X]): 
   
   ActorSystem(root, file, config)
 
-def startupWithRole[X](role: String, port: Int)(root: => Behavior[X]): ActorSystem[X] =
+def startupWithRoles[X](port: Int, roles: String*)(root: => Behavior[X]): ActorSystem[X] =
+  val rolesHocon = roles.map(r => s""""$r"""").mkString("[", ", ", "]")
   val config = ConfigFactory
     .parseString(s"""
-      akka.remote.artery.canonical.port=$port
-      akka.cluster.roles = [$role]
-      """)
-    .withFallback(ConfigFactory.load("agario-game"))
-  
-  ActorSystem(root, "agario-cluster", config)
-
-def startupBackendNode[X](port: Int)(root: => Behavior[X]): ActorSystem[X] =
-  val config = ConfigFactory
-    .parseString(s"""
-      akka.remote.artery.canonical.port=$port
-      akka.cluster.roles = ["backend", "food-mgr", "player-mgr"]
+      akka.remote.artery.canonical.port = $port
+      akka.cluster.roles = $rolesHocon
       """)
     .withFallback(ConfigFactory.load("agario-game"))
   

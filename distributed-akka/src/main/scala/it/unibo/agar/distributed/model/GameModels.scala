@@ -1,4 +1,5 @@
 package it.unibo.agar.distributed.model
+
 import it.unibo.agar.distributed.model.serializables.CborSerializable
 
 sealed trait Entity:
@@ -35,6 +36,6 @@ case class DistributedWorld(
 
   def newPlayers(elements: Seq[Player]): DistributedWorld =
     copy(players = elements)
-    
+
   def playerById(id: String): Option[Player] =
     players.find(_.id == id)

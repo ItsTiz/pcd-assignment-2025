@@ -17,7 +17,7 @@ object EatingManager:
   // Determines if a player can eat another player
   def canEatPlayer(player: Player, other: Player): Boolean =
     collides(player, other) && player.mass > other.mass * MASS_MARGIN
-
+  
   def evaluateCollisions(player: Player, foods: Set[Food], players: Map[String, Player]): TickResult =
     val ps = players.values.toSeq.sortBy(p => (-p.mass, p.id))
     val fs = foods.toSeq

@@ -1,11 +1,11 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.backend.players
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.ddata.*
+import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import it.unibo.agar.distributed.model.actors.PlayerManager.Command
+import it.unibo.agar.distributed.model.actors.backend.players.PlayerManager.Command
 import it.unibo.agar.distributed.model.serializables.CborSerializable
 import it.unibo.agar.distributed.model.{EatingManager, Food, Player}
 
@@ -72,9 +72,15 @@ object PlayerActor:
       Behaviors.withTimers { timers =>
         timers.startTimerWithFixedDelay(Tick, Tick, 30.millis)
 
-        def running(player: Player, dx: Double, dy: Double, foods: Set[Food], otherPlayers: Map[String, Player]): Behavior[Command] =
+        def running(
+            player: Player,
+            dx: Double,
+            dy: Double,
+            foods: Set[Food],
+            otherPlayers: Map[String, Player]
+        ): Behavior[Command] =
           Behaviors.receiveMessage {
-            
+
             case InternalSubscribeResponse(chg @ Replicator.Changed(`foodKey`)) =>
               running(player, dx, dy, chg.get(foodKey).elements, otherPlayers)
 
@@ -87,7 +93,7 @@ object PlayerActor:
               Behaviors.same
 
             case InternalFoodUpdateResponse(_) =>
-            Behaviors.same
+              Behaviors.same
 
             case ChangeDirection(newDx, newDy) =>
               running(player, newDx, newDy, foods, otherPlayers)
@@ -98,14 +104,14 @@ object PlayerActor:
                   x = (player.x + dx * speed).max(0.0).min(mapWidth),
                   y = (player.y + dy * speed).max(0.0).min(mapHeight)
                 )
-              
+
               val result: EatingManager.TickResult = EatingManager.evaluateCollisions(movedPlayer, foods, otherPlayers)
 
               // Send exactly ONE Replicator.Update for our new position/mass
               manager ! PlayerManager.PlayerUpdated(result.finalPlayer)
               // Send Replicator.Update to remove
               removeFoods(result.eatenFoods)
-              //Send Actor messages to deadPlayers to kill them
+              // Send Actor messages to deadPlayers to kill them
               result.eatenPlayers.foreach(id => manager ! PlayerManager.Leave(id))
 
               running(result.finalPlayer, dx, dy, foods -- result.eatenFoods, otherPlayers -- result.eatenPlayers)

@@ -1,13 +1,10 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.backend.food
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ddata.ORSet
-import akka.cluster.ddata.ORSetKey
-import akka.cluster.ddata.SelfUniqueAddress
-import akka.cluster.ddata.typed.scaladsl.DistributedData
-import akka.cluster.ddata.typed.scaladsl.Replicator
+import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
+import akka.cluster.ddata.{ORSet, ORSetKey, SelfUniqueAddress}
 import it.unibo.agar.distributed.model.Food
 import it.unibo.agar.distributed.serviceKey
 
@@ -31,6 +28,8 @@ object FoodGenerator:
   private def generatingFunction(offX: Int, offY: Int, deltaX: Int, deltaY: Int): Food =
     Food(s"f${Random.nextInt(1000)}", Random.nextInt(deltaX) + offX * deltaX, Random.nextInt(deltaY) + offY * deltaY)
 
+  private val foodKey = ORSetKey[Food]("food-ddata")
+
   def apply(id: Int): Behavior[FoodGeneratorMessage] =
     Behaviors.setup { context =>
       context.log.info(s"Created sharded actor with id: $id")
@@ -45,17 +44,16 @@ object FoodGenerator:
       val offSetY = id / 2
 
       context.system.receptionist ! Receptionist.Register(sKey, context.self)
-      // val foods = GameInitializer.initialFoods(numFoods, width, height)
 
       Behaviors.withTimers { timers =>
-        timers.startTimerAtFixedRate(TimerKey, Tick, (updateInterval * 1000).toLong.millis)
+        timers.startTimerAtFixedRate(TimerKey, Tick, updateInterval.toLong.millis)
 
         def waitTrigger: Behavior[FoodGeneratorMessage] =
           Behaviors.receiveMessage {
             case Tick =>
               DistributedData.withReplicatorMessageAdapter[FoodGeneratorMessage, ORSet[Food]] { replicatorAdapter =>
                 replicatorAdapter.askUpdate(
-                  Replicator.Update(ORSetKey("food-ddata"), ORSet.empty, Replicator.WriteLocal)(
+                  Replicator.Update(foodKey, ORSet.empty, Replicator.WriteLocal)(
                     _ :+ generatingFunction(offsetX, offSetY, mapWidth / 2, mapHeight / 2)
                   ),
                   InternalUpdateResponse.apply
@@ -74,7 +72,6 @@ object FoodGenerator:
             case internal: InternalMessage =>
               internal match {
                 case InternalUpdateResponse(_) =>
-                  context.log.info("New food registered successfully in replicated data")
                   Behaviors.same
               }
           }
