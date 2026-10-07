@@ -30,6 +30,6 @@ object GlobalSpectatorApp extends SimpleSwingApplication:
 
   startupWithRoles(nodePort, spectatorRoles: _*)(SpectatorRootBehavior(onStateChanged))
 
-  override def top: Frame = new GlobalView(world)
+  override def top: Frame = new GlobalView(() => world)
 
 end GlobalSpectatorApp

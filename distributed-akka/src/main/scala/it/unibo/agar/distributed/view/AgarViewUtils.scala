@@ -48,7 +48,7 @@ object AgarViewUtils:
       val bounds = g.getClipBounds
       val metrics = g.getFontMetrics
       ((bounds.width - metrics.stringWidth(text)) / 2, (bounds.height / 2) + (metrics.getAscent / 2))
-
+    
     // Draw foods
     g.setColor(Color.green)
     world.foods.foreach: food =>
