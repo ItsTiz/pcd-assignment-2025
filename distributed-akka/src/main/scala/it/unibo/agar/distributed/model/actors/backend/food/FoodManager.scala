@@ -19,7 +19,7 @@ object FoodManager:
 
       ShardedDaemonProcess(system).init(
         name = "food-generation",
-        numberOfInstances = 4,
+        numberOfInstances = nGenerators,
         behaviorFactory = id => FoodGenerator(id),
         settings = settings,
         stopMessage = Some(FoodGenerator.StopGeneration)

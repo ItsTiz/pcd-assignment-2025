@@ -11,11 +11,11 @@ object AgarBackendApp:
   private val backendRoles: Seq[String] = baseConfig.getStringList("agar.roles.backend").asScala.toSeq
 
   def main(args: Array[String]): Unit =
-    if args.length > 0 then
-      val port = args.head.toInt
-      val roles = args.tail
-      println(s"Starting node with roles=${roles.mkString("Array(", ", ", ")")} port=$port")
-      startupWithRoles(port, roles: _*)(BackendRootBehavior())
+    if args.nonEmpty then
+      val port = args(0).toInt
+      val roles = if args.length > 1 then args.drop(1).toSeq else backendRoles
+      println(s"[Backend] Starting from CLI on port=$port with roles=${roles.mkString(",")}")
+      startupWithRoles(port, roles:_*)(BackendRootBehavior())
     else
-      println("No args provided. Starting default backend cluster.")
-      seeds.foreach(port => startupWithRoles(port, backendRoles: _*)(BackendRootBehavior()))
+      println("[Backend] Starting from environment variables / agario-game.conf")
+      startupWithRoles(port = 0, backendRoles:_*)(BackendRootBehavior())

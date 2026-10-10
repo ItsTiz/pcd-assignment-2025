@@ -1,0 +1,43 @@
+services:
+  backend1:
+    image: agar-backend:latest
+    container_name: agar-backend1
+    environment:
+      - CLUSTER_IP=backend1
+      - CLUSTER_PORT=25251
+      - SEED_NODE_1=akka://agario-cluster@backend1:25251
+      - SEED_NODE_2=akka://agario-cluster@backend2:25252
+    ports:
+      - "25251:25251"
+    networks:
+      - agar-net
+
+  backend2:
+    image: agar-backend:latest
+    container_name: agar-backend2
+    environment:
+      - CLUSTER_IP=backend2
+      - CLUSTER_PORT=25252
+      - SEED_NODE_1=akka://agario-cluster@backend1:25251
+      - SEED_NODE_2=akka://agario-cluster@backend2:25252
+    ports:
+      - "25252:25252"
+    networks:
+      - agar-net
+
+  backend3:
+    image: agar-backend:latest
+    container_name: agar-backend3
+    environment:
+      - CLUSTER_IP=backend3
+      - CLUSTER_PORT=25253
+      - SEED_NODE_1=akka://agario-cluster@backend1:25251
+      - SEED_NODE_2=akka://agario-cluster@backend2:25252
+    ports:
+      - "25253:25253"
+    networks:
+      - agar-net
+
+networks:
+  agar-net:
+    driver: bridge

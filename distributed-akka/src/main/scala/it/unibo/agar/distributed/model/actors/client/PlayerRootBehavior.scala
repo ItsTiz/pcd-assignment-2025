@@ -1,4 +1,4 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.client
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
@@ -11,7 +11,7 @@ object PlayerRootBehavior:
 
   def apply(player: Player, stateChangedSlot: (Seq[Food], Seq[Player], String) => Unit): Behavior[Nothing] =
     Behaviors.setup[Nothing] { ctx =>
-      ClusterSharding(ctx.system).init(Entity(PlayerActor.TypeKey)(entityCtx => PlayerActor(entityCtx.entityId)))
+      ClusterSharding(ctx.system).init(Entity(PlayerActor.TypeKey)(entityCtx => PlayerActor(entityCtx.entityId)).withRole("backend"))
 
       ctx.spawn(WorldSpectator(stateChangedSlot), "WorldSpectator")
       val joinListenerRef = ctx.spawn(PlayerJoinListener(player), "PlayerJoinListener")

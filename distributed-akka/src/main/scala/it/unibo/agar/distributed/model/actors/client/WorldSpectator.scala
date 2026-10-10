@@ -1,9 +1,9 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.client
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.ddata.{LWWMapKey, LWWRegisterKey, ORSetKey, ReplicatedData}
 import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
+import akka.cluster.ddata.{LWWMapKey, LWWRegisterKey, ORSetKey, ReplicatedData}
 import it.unibo.agar.distributed.model.{Food, Player}
 
 object WorldSpectator:

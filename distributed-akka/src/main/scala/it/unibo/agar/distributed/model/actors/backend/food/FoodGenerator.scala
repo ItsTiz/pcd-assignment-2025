@@ -6,7 +6,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.ddata.{LWWRegisterKey, ORSet, ORSetKey, ReplicatedData, SelfUniqueAddress}
 import it.unibo.agar.distributed.model.Food
-import it.unibo.agar.distributed.model.actors.WorldSpectator.{InternalMessage, InternalSubscribeResponse, winKey}
+import it.unibo.agar.distributed.model.actors.client.WorldSpectator.{InternalMessage, InternalSubscribeResponse, winKey}
 import it.unibo.agar.distributed.serviceKey
 
 import scala.concurrent.duration.DurationLong

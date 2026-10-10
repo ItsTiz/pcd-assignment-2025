@@ -24,7 +24,7 @@ def startupWithRoles[X](port: Int, roles: String*)(root: => Behavior[X]): ActorS
       akka.cluster.roles = $rolesHocon
       """)
     .withFallback(ConfigFactory.load("agario-game"))
-  
+
   ActorSystem(root, "agario-cluster", config)
 
 def serviceKey[T](nameTag: String, id: Int = 0)(implicit classTag: ClassTag[T]) = ServiceKey[T](s"$nameTag-$id")

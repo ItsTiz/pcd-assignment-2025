@@ -1,7 +1,6 @@
 package it.unibo.agar.distributed.controller
 
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import it.unibo.agar.distributed.model.actors.PlayerRootBehavior
 import it.unibo.agar.distributed.model.{DistributedWorld, Food, GameStateManager, Player}
 import it.unibo.agar.distributed.startupWithRoles
 import it.unibo.agar.distributed.view.LocalView
@@ -14,6 +13,7 @@ import scala.util.Random
 import com.typesafe.config.ConfigFactory
 import it.unibo.agar.distributed.controller.GlobalSpectatorApp.config
 import it.unibo.agar.distributed.model.actors.backend.players.PlayerActor
+import it.unibo.agar.distributed.model.actors.client.PlayerRootBehavior
 
 import scala.jdk.CollectionConverters.*
 

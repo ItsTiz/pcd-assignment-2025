@@ -2,7 +2,7 @@ package it.unibo.agar.distributed.controller
 
 import com.typesafe.config.ConfigFactory
 import it.unibo.agar.distributed.controller.LocalPlayerApp.world
-import it.unibo.agar.distributed.model.actors.SpectatorRootBehavior
+import it.unibo.agar.distributed.model.actors.client.SpectatorRootBehavior
 import it.unibo.agar.distributed.model.{DistributedWorld, DistributedWorldState, Food, Player}
 import it.unibo.agar.distributed.startupWithRoles
 import it.unibo.agar.distributed.view.GlobalView

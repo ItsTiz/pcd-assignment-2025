@@ -1,3 +1,4 @@
+import com.typesafe.sbt.packager.docker.DockerPermissionStrategy
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
@@ -8,7 +9,7 @@ lazy val root = (project in file("."))
   .aggregate(distributed, javaRmi)
   .settings(
     name := "agar-root",
-    publish / skip := true // Prevents the root itself from compiling code or being published
+    publish / skip := true
   )
 
 lazy val distributed = (project in file("distributed-akka"))
@@ -22,8 +23,7 @@ lazy val distributed = (project in file("distributed-akka"))
       "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
       "ch.qos.logback" % "logback-classic" % "1.5.18",
-      "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
-      "com.typesafe.akka" %% "akka-actor-typed" % "2.8.8"
+      "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
     ),
     run / fork := true
   )

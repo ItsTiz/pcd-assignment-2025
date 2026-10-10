@@ -1,11 +1,11 @@
-package it.unibo.agar.distributed.model.actors
+package it.unibo.agar.distributed.model.actors.client
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.Cluster
+import it.unibo.agar.distributed.model.actors.client.WorldSpectator.SpectatorMessage
 import it.unibo.agar.distributed.model.{Food, Player}
-import it.unibo.agar.distributed.model.actors.WorldSpectator.SpectatorMessage
 import it.unibo.agar.distributed.serviceKey
 
 object SpectatorRootBehavior:
