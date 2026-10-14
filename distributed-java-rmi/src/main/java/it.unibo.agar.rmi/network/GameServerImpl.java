@@ -39,31 +39,33 @@ public class GameServerImpl implements GameServer, StateListener {
     }
 
     @Override
-    public synchronized WorldSnapshot getWorldSnapshot() throws RemoteException {
-        return gameStateManager.getWorldCopy();
-    }
-
-    @Override
     public synchronized Player playerValid(final String playerId) throws RemoteException {
         return gameStateManager.playerValid(playerId);
     }
 
     public void signalClients() {
-        clients.forEach((s, gameClient) -> {
+        final WorldSnapshot snapshot = gameStateManager.getWorldCopy();
+        clients.forEach((id, client) -> {
             try {
-                gameClient.onWorldUpdate(gameStateManager.getWorldCopy());
+                client.onWorldUpdate(snapshot);
             } catch (RemoteException e) {
-                throw new RuntimeException(e);
+                try {
+                    leave(id);
+                } catch (RemoteException eLeave) {
+                    throw new RuntimeException(eLeave);
+                }
             }
         });
     }
 
     public void eliminatePlayers(List<String> playerIds) {
         playerIds.forEach(id -> {
+            final GameClient client = clients.remove(id);
+            if (client == null) return;
             try {
-                clients.get(id).onPlayerKilled(id);
+                client.onPlayerKilled(id);
             } catch (RemoteException e) {
-                throw new RuntimeException(e);
+                log("Could not notify " + id + " of its elimination.");
             }
         });
     }

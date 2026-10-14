@@ -32,5 +32,6 @@ lazy val javaRmi = (project in file("distributed-java-rmi"))
   .settings(
     name := "java-rmi-agar",
     autoScalaLibrary := false,
-    crossPaths := false
+    crossPaths := false,
+    run / fork := true
   )

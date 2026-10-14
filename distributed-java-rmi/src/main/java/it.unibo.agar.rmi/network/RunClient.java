@@ -39,7 +39,7 @@ public class RunClient {
                 }
             }));
 
-            serverService.join(player, clientStub); //some sort of observer i guess
+            serverService.join(player, clientStub); //some sort of observer I guess
 
             log("Running client with player " + playerId);
 
